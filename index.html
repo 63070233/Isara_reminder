@@ -1,339 +1,697 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ลงทะเบียน — ISARA INTER BROKER</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>ISARA — กรมธรรม์ของฉัน</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
+    /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Helvetica Neue', Arial, 'Noto Sans Thai', sans-serif;
-      background: #f0f4f8; min-height: 100vh;
-      display: flex; flex-direction: column; align-items: center; padding-bottom: 40px;
+    :root {
+      --green:   #06c755;
+      --green-d: #04a344;
+      --red:     #e53935;
+      --orange:  #fb8c00;
+      --blue:    #1565c0;
+      --gray:    #f4f6f8;
+      --text:    #212121;
+      --sub:     #757575;
+      --card:    #ffffff;
+      --border:  #e0e0e0;
+      --radius:  14px;
     }
-    .top-bar {
-      width: 100%; background: #06c755; padding: 16px 20px 14px;
+    body {
+      font-family: 'Segoe UI', 'Noto Sans Thai', sans-serif;
+      background: var(--gray);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── Loading ── */
+    #screen-loading {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 100vh; gap: 16px;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid var(--border);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: var(--sub); font-size: 14px; }
+
+    /* ── Top Bar ── */
+    .topbar {
+      background: var(--green);
+      color: #fff;
+      padding: 14px 16px 12px;
       display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100;
       box-shadow: 0 2px 8px rgba(0,0,0,.15);
     }
-    .top-bar-text h1 { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.2; }
-    .top-bar-text p  { font-size: 11px; color: rgba(255,255,255,.85); }
+    .topbar-logo { font-size: 20px; }
+    .topbar-title { font-weight: 700; font-size: 16px; flex: 1; }
+    .topbar-name { font-size: 12px; opacity: .85; text-align: right; max-width: 100px; line-height: 1.3; }
+
+    /* ── Tab Bar ── */
+    .tabbar {
+      display: flex; background: #fff;
+      border-bottom: 2px solid var(--border);
+      position: sticky; top: 52px; z-index: 99;
+    }
+    .tab-btn {
+      flex: 1; padding: 12px 4px; font-size: 13px; font-weight: 600;
+      border: none; background: none; color: var(--sub); cursor: pointer;
+      border-bottom: 3px solid transparent; margin-bottom: -2px;
+      transition: color .2s, border-color .2s;
+    }
+    .tab-btn.active { color: var(--green); border-bottom-color: var(--green); }
+
+    /* ── Main Content ── */
+    .content { padding: 16px; max-width: 540px; margin: 0 auto; }
+
+    /* ── Cards ── */
     .card {
-      background: #fff; border-radius: 16px;
-      box-shadow: 0 4px 20px rgba(0,0,0,.08);
-      padding: 28px 24px; width: calc(100% - 32px);
-      max-width: 420px; margin-top: 20px;
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+      padding: 16px; margin-bottom: 14px;
     }
-    /* Loading */
-    .loading-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; padding:40px 0; }
-    .spinner {
-      width:44px; height:44px; border:4px solid #e0e0e0;
-      border-top-color:#06c755; border-radius:50%;
-      animation: spin .8s linear infinite;
+    .card-title {
+      font-size: 13px; font-weight: 700; color: var(--sub);
+      text-transform: uppercase; letter-spacing: .5px;
+      margin-bottom: 12px;
     }
-    @keyframes spin { to { transform:rotate(360deg); } }
-    .loading-text { color:#888; font-size:14px; }
-    /* Profile strip */
-    .profile-strip {
-      display:flex; align-items:center; gap:14px;
-      background:#f6fef9; border:1px solid #b7eacb;
-      border-radius:12px; padding:12px 16px; margin-bottom:24px;
+
+    /* ── Summary Strip ── */
+    .summary-strip {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 14px;
     }
-    .profile-strip img { width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #06c755; }
-    .profile-strip .name { font-weight:700; color:#1a1a1a; font-size:15px; }
-    .profile-strip .sub  { font-size:12px; color:#888; }
-    /* Form */
-    .section-title { font-size:13px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; }
-    .field { margin-bottom:20px; }
-    .field label { display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px; }
-    .field label .req { color:#e53935; margin-left:2px; }
-    .field input {
-      width:100%; padding:12px 16px; border:1.5px solid #ddd;
-      border-radius:10px; font-size:16px; color:#1a1a1a;
-      transition:border-color .2s; outline:none;
+    .summary-box {
+      background: var(--card); border-radius: var(--radius);
+      padding: 14px 10px; text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
     }
-    .field input:focus { border-color:#06c755; }
-    .field input.error { border-color:#e53935; }
-    .field .hint { font-size:11px; color:#999; margin-top:4px; }
-    .err-msg { display:none; font-size:12px; color:#e53935; margin-top:4px; }
-    .field input.error ~ .err-msg { display:block; }
-    /* Alert */
-    .alert {
-      padding:12px 16px; border-radius:10px; font-size:13px;
-      margin-bottom:16px; display:none; line-height:1.5;
+    .summary-box .val { font-size: 22px; font-weight: 800; }
+    .summary-box .lbl { font-size: 11px; color: var(--sub); margin-top: 2px; }
+    .val.green { color: var(--green); }
+    .val.red   { color: var(--red); }
+    .val.orange { color: var(--orange); }
+
+    /* ── Outstanding Banner ── */
+    .outstanding-banner {
+      background: linear-gradient(135deg, #e53935, #c62828);
+      color: #fff; border-radius: var(--radius);
+      padding: 16px; margin-bottom: 14px;
+      display: flex; justify-content: space-between; align-items: center;
     }
-    .alert.info  { background:#e3f2fd; color:#1565c0; border-left:4px solid #1565c0; display:block; }
-    .alert.error { background:#ffebee; color:#c62828; border-left:4px solid #e53935; }
-    /* Button */
+    .outstanding-banner.none {
+      background: linear-gradient(135deg, #2e7d32, #1b5e20);
+    }
+    .ob-label { font-size: 13px; opacity: .9; }
+    .ob-amount { font-size: 26px; font-weight: 800; }
+    .ob-note { font-size: 11px; opacity: .8; margin-top: 2px; }
+    .ob-icon { font-size: 36px; }
+
+    /* ── Vehicle Group ── */
+    .vehicle-header {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--blue); color: #fff;
+      border-radius: 10px 10px 0 0; padding: 10px 14px;
+      font-weight: 700; font-size: 15px; margin-bottom: 0;
+    }
+    .vehicle-group { margin-bottom: 16px; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    .vehicle-body { background: var(--card); }
+
+    /* ── Installment Row ── */
+    .inst-row {
+      display: flex; align-items: center; padding: 12px 14px;
+      border-bottom: 1px solid var(--border); gap: 10px;
+    }
+    .inst-row:last-child { border-bottom: none; }
+    .inst-num {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; flex-shrink: 0;
+    }
+    .inst-num.paid { background: #e8f5e9; color: var(--green-d); }
+    .inst-num.overdue { background: #ffebee; color: var(--red); }
+    .inst-num.upcoming { background: #fff3e0; color: var(--orange); }
+    .inst-num.normal { background: #e3f2fd; color: var(--blue); }
+    .inst-info { flex: 1; min-width: 0; }
+    .inst-policy { font-size: 11px; color: var(--sub); }
+    .inst-amount { font-size: 15px; font-weight: 700; }
+    .inst-due { font-size: 11px; color: var(--sub); margin-top: 1px; }
+    .inst-badge {
+      font-size: 11px; font-weight: 700; padding: 3px 8px;
+      border-radius: 20px; white-space: nowrap; flex-shrink: 0;
+    }
+    .badge-paid { background: #e8f5e9; color: var(--green-d); }
+    .badge-overdue { background: #ffebee; color: var(--red); }
+    .badge-soon { background: #fff3e0; color: var(--orange); }
+    .badge-pending { background: #e3f2fd; color: var(--blue); }
+
+    /* ── Progress bar ── */
+    .progress-wrap { background: var(--gray); border-radius: 99px; height: 7px; margin-top: 8px; }
+    .progress-bar { background: var(--green); border-radius: 99px; height: 7px; transition: width .5s; }
+    .progress-label { font-size: 11px; color: var(--sub); margin-top: 4px; text-align: right; }
+
+    /* ── History List ── */
+    .hist-row {
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .hist-row:last-child { border-bottom: none; }
+    .hist-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+    .hist-info { flex: 1; }
+    .hist-title { font-size: 14px; font-weight: 600; }
+    .hist-sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
+    .hist-amount { font-weight: 700; font-size: 14px; color: var(--green-d); }
+
+    /* ── Empty State ── */
+    .empty { text-align: center; padding: 40px 20px; color: var(--sub); }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-text { font-size: 15px; }
+
+    /* ── Next Due Banner ── */
+    .next-due {
+      background: linear-gradient(135deg, #1565c0, #0d47a1);
+      color: #fff; border-radius: var(--radius);
+      padding: 14px 16px; margin-bottom: 14px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .nd-label { font-size: 12px; opacity: .85; }
+    .nd-val { font-size: 17px; font-weight: 800; }
+    .nd-sub { font-size: 11px; opacity: .8; }
+    .nd-days { text-align: right; }
+    .nd-days-num { font-size: 26px; font-weight: 800; }
+
+    /* ── Registration Form ── */
+    .form-hero {
+      text-align: center; padding: 24px 16px 16px;
+    }
+    .form-hero-logo { font-size: 48px; }
+    .form-hero-title { font-size: 20px; font-weight: 800; margin: 8px 0 4px; color: var(--blue); }
+    .form-hero-sub { font-size: 13px; color: var(--sub); }
+    .form-group { margin-bottom: 14px; }
+    .form-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; }
+    .form-input {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-size: 15px; outline: none;
+      transition: border-color .2s;
+    }
+    .form-input:focus { border-color: var(--green); }
+    .form-hint { font-size: 11px; color: var(--sub); margin-top: 4px; }
     .btn-submit {
-      width:100%; padding:15px; background:#06c755; color:#fff;
-      font-size:16px; font-weight:700; border:none; border-radius:12px;
-      cursor:pointer; display:flex; align-items:center; justify-content:center;
-      gap:8px; transition:opacity .2s;
+      width: 100%; padding: 14px; background: var(--green);
+      color: #fff; border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      transition: background .2s; margin-top: 4px;
     }
-    .btn-submit:disabled { opacity:.6; cursor:not-allowed; }
-    /* Success */
-    .success-icon { font-size:60px; text-align:center; margin:8px 0 16px; }
-    .success-title { font-size:22px; font-weight:800; color:#1a1a1a; text-align:center; }
-    .success-sub   { font-size:14px; color:#666; text-align:center; margin:8px 0 20px; line-height:1.6; }
-    .installment-list { background:#f8f9fa; border-radius:12px; padding:16px; margin-bottom:16px; }
-    .inst-item {
-      display:flex; justify-content:space-between; padding:8px 0;
-      border-bottom:1px solid #eee; font-size:13px;
+    .btn-submit:active { background: var(--green-d); }
+    .btn-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* ── Success / Error ── */
+    .result-box { text-align: center; padding: 32px 20px; }
+    .result-icon { font-size: 56px; margin-bottom: 12px; }
+    .result-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+    .result-sub { font-size: 14px; color: var(--sub); line-height: 1.6; }
+    .btn-secondary {
+      margin-top: 20px; padding: 12px 28px;
+      background: var(--green); color: #fff;
+      border: none; border-radius: 10px; font-size: 15px; font-weight: 700;
+      cursor: pointer;
     }
-    .inst-item:last-child { border-bottom:none; }
-    .inst-item .tag { font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; }
-    .tag.soon   { background:#fff3e0; color:#e65100; }
-    .tag.overdue{ background:#ffebee; color:#c62828; }
-    .tag.ok     { background:#e8f5e9; color:#2e7d32; }
-    .btn-close {
-      width:100%; padding:14px; background:#f5f5f5; color:#555;
-      font-size:15px; font-weight:600; border:none; border-radius:12px; cursor:pointer;
+
+    /* ── Profile Header ── */
+    .profile-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px; background: var(--card);
+      border-radius: var(--radius); margin-bottom: 14px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
     }
-    .btn-retry {
-      width:100%; padding:14px; background:#06c755; color:#fff;
-      font-size:15px; font-weight:600; border:none; border-radius:12px; cursor:pointer; margin-top:12px;
+    .profile-avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      object-fit: cover; border: 2px solid var(--green);
     }
-    /* Error screen */
-    .error-icon  { font-size:48px; text-align:center; margin:8px 0 12px; }
-    .error-title { font-size:18px; font-weight:700; color:#c62828; text-align:center; }
-    .error-sub   { font-size:13px; color:#777; text-align:center; margin:8px 0 20px; line-height:1.6; }
-    .multi-car-banner {
-      background:#e3f2fd; border-radius:10px; padding:12px 16px;
-      font-size:12px; color:#1565c0; margin-bottom:16px; line-height:1.5;
+    .profile-avatar-placeholder {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: var(--green); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
     }
-    /* Hidden */
-    #screen-form, #screen-success, #screen-error { display:none; }
+    .profile-name { font-size: 16px; font-weight: 700; }
+    .profile-phone { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+    /* ── Notification ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #212121; color: #fff; padding: 10px 20px;
+      border-radius: 20px; font-size: 13px; z-index: 999;
+      opacity: 0; transition: opacity .3s;
+      pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; }
   </style>
 </head>
 <body>
 
-<div class="top-bar">
-  <div class="top-bar-text">
-    <h1>ISARA INTER BROKER</h1>
-    <p>ระบบลงทะเบียนผ่อนชำระ</p>
-  </div>
+<!-- ════════════════ SCREEN: Loading ════════════════ -->
+<div id="screen-loading">
+  <div class="spinner"></div>
+  <div class="loading-text">กำลังเชื่อมต่อ LINE...</div>
 </div>
 
-<!-- LOADING -->
-<div class="card" id="screen-loading">
-  <div class="loading-wrap">
-    <div class="spinner"></div>
-    <p class="loading-text" id="loading-text">กำลังเชื่อมต่อ LINE…</p>
+<!-- ════════════════ SCREEN: Portal ════════════════ -->
+<div id="screen-portal" class="screen">
+
+  <!-- Top Bar -->
+  <div class="topbar">
+    <div class="topbar-logo">🛡️</div>
+    <div class="topbar-title">ISARA INTER BROKER</div>
+    <div class="topbar-name" id="topbar-name"></div>
   </div>
+
+  <!-- Tab Bar -->
+  <div class="tabbar">
+    <button class="tab-btn active" onclick="switchTab('overview')">📊 ภาพรวม</button>
+    <button class="tab-btn" onclick="switchTab('installments')">📋 งวดทั้งหมด</button>
+    <button class="tab-btn" onclick="switchTab('history')">🧾 ประวัติ</button>
+  </div>
+
+  <!-- ── Tab: Overview ── -->
+  <div id="tab-overview" class="content">
+
+    <!-- Profile -->
+    <div class="profile-header" id="profile-block"></div>
+
+    <!-- Outstanding Banner -->
+    <div id="outstanding-banner"></div>
+
+    <!-- Next Due -->
+    <div id="next-due-banner"></div>
+
+    <!-- Summary Strip -->
+    <div class="summary-strip" id="summary-strip"></div>
+
+    <!-- Vehicle Quick View (first 3 installments) -->
+    <div id="quick-vehicles"></div>
+
+  </div>
+
+  <!-- ── Tab: Installments ── -->
+  <div id="tab-installments" class="content" style="display:none;">
+    <div id="vehicle-groups"></div>
+  </div>
+
+  <!-- ── Tab: History ── -->
+  <div id="tab-history" class="content" style="display:none;">
+    <div class="card" id="history-list"></div>
+  </div>
+
 </div>
 
-<!-- FORM -->
-<div class="card" id="screen-form">
-  <div class="profile-strip">
-    <img id="profile-pic" src="" alt="profile" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 48 48%22><circle cx=%2224%22 cy=%2224%22 r=%2224%22 fill=%22%2306c755%22/><text x=%2224%22 y=%2230%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2220%22>👤</text></svg>'">
-    <div>
-      <div class="name" id="profile-name">กำลังโหลด…</div>
-      <div class="sub">LINE Member</div>
+<!-- ════════════════ SCREEN: Register ════════════════ -->
+<div id="screen-register" class="screen">
+  <div class="topbar">
+    <div class="topbar-logo">🛡️</div>
+    <div class="topbar-title">ISARA INTER BROKER</div>
+  </div>
+  <div class="content">
+    <div class="form-hero">
+      <div class="form-hero-logo">🚗</div>
+      <div class="form-hero-title">ลงทะเบียนรับแจ้งเตือน</div>
+      <div class="form-hero-sub">กรอกทะเบียนรถที่ผ่อนชำระกับเรา<br>เพื่อรับการแจ้งเตือนผ่าน LINE อัตโนมัติ</div>
     </div>
+    <div class="card">
+      <div class="form-group">
+        <label class="form-label">ทะเบียนรถ <span style="color:var(--red)">*</span></label>
+        <input id="input-plate" class="form-input" type="text" placeholder="เช่น กข 1234 หรือ 1กข1234"
+               autocomplete="off" oninput="this.value=this.value.toUpperCase()" />
+        <div class="form-hint">ใส่ทะเบียนรถที่ผ่อนชำระกับ ISARA</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">เบอร์โทรศัพท์ <span style="color:var(--sub)">(ไม่บังคับ)</span></label>
+        <input id="input-phone" class="form-input" type="tel" placeholder="เช่น 081-234-5678" />
+      </div>
+      <button class="btn-submit" id="btn-register" onclick="submitRegister()">
+        ✅ ลงทะเบียน
+      </button>
+    </div>
+    <div id="register-result"></div>
   </div>
-
-  <div class="multi-car-banner">
-    🚗 มีรถหลายคัน? ลงทะเบียนทีละคัน แล้วกลับมากรอกคันต่อไปได้เลย
-  </div>
-
-  <div class="alert info" id="alert-info">กรอกทะเบียนรถที่ต้องการเชื่อมกับ LINE ของคุณ</div>
-  <div class="alert error" id="alert-error"></div>
-
-  <p class="section-title">ข้อมูลการลงทะเบียน</p>
-
-  <div class="field">
-    <label>ทะเบียนรถ <span class="req">*</span></label>
-    <input type="text" id="inp-plate" placeholder="เช่น กข1234 หรือ 1กข1234"
-           maxlength="10" autocomplete="off" autocapitalize="characters"
-           oninput="this.value=this.value.replace(/\s+/g,'').toUpperCase()">
-    <div class="err-msg">กรุณากรอกทะเบียนรถ</div>
-    <div class="hint">ตัวอักษรและตัวเลข ไม่ต้องมีช่องว่าง</div>
-  </div>
-
-  <div class="field">
-    <label>เบอร์โทรศัพท์ <span style="color:#999;font-weight:400">(ไม่บังคับ)</span></label>
-    <input type="tel" id="inp-phone" placeholder="เช่น 0812345678" maxlength="10">
-    <div class="hint">สำหรับติดต่อสำรอง</div>
-  </div>
-
-  <button class="btn-submit" id="btn-submit" onclick="submitForm()">
-    <span>✅</span><span>ลงทะเบียน</span>
-  </button>
 </div>
 
-<!-- SUCCESS -->
-<div class="card" id="screen-success">
-  <div class="success-icon" id="success-icon-emoji">🎉</div>
-  <div class="success-title" id="success-title-text">ลงทะเบียนสำเร็จ!</div>
-  <p class="success-sub" id="success-sub"></p>
-  <div class="installment-list" id="inst-list-wrap" style="display:none">
-    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#444">📋 งวดชำระที่รอดำเนินการ</div>
-    <div id="inst-list"></div>
+<!-- ════════════════ SCREEN: Error ════════════════ -->
+<div id="screen-error" class="screen">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:24px;">
+    <div style="font-size:56px;margin-bottom:16px;">⚠️</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px;">เกิดข้อผิดพลาด</div>
+    <div id="error-msg" style="font-size:14px;color:#757575;text-align:center;line-height:1.6;"></div>
+    <button class="btn-secondary" onclick="location.reload()">ลองใหม่</button>
   </div>
-  <button class="btn-close" onclick="closeOrBack()">ปิด</button>
 </div>
 
-<!-- ERROR -->
-<div class="card" id="screen-error">
-  <div class="error-icon">⚠️</div>
-  <div class="error-title">เกิดข้อผิดพลาด</div>
-  <p class="error-sub" id="error-msg">ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่</p>
-  <button class="btn-retry" onclick="initLiff()">ลองใหม่อีกครั้ง</button>
-</div>
+<!-- Toast -->
+<div class="toast" id="toast"></div>
 
 <script>
-  // ─────────────────────────────────────────────────────────────
-  //  ⚙️  CONFIG — แก้ก่อน deploy
-  // ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════
+//  CONFIG — แก้ตรงนี้
+// ══════════════════════════════════════════════
   const LIFF_ID = '2010186323-8y5GORz2';       // ← LIFF ID จาก LINE Developers
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbzte-NzPR1_NuGkxUC2bajoT2Un3k15FMT1HT-f8fo-6uNBwrheAlfRf0-MrNwOiPmNrg/exec'; // ← Web App URL จาก GAS (ลงท้าย /exec)
-  // ─────────────────────────────────────────────────────────────
 
-  let lineProfile = null;
+// ══════════════════════════════════════════════
+//  State
+// ══════════════════════════════════════════════
+let profile = null;   // LINE profile
+let data    = null;   // customer data from GAS
 
-  // ── Screen helpers ───────────────────────────────────────────
-  function showScreen(id) {
-    ['screen-loading','screen-form','screen-success','screen-error']
-      .forEach(s => document.getElementById(s).style.display = s===id ? 'block' : 'none');
+// ══════════════════════════════════════════════
+//  Boot
+// ══════════════════════════════════════════════
+window.addEventListener('load', async () => {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+
+    profile = await liff.getProfile();
+    await loadCustomerData();
+
+  } catch (err) {
+    showError('ไม่สามารถเชื่อมต่อ LINE ได้<br>' + err.message);
   }
-  function setLoading(text) {
-    document.getElementById('loading-text').textContent = text;
-    showScreen('screen-loading');
-  }
-  function showAlert(id, msg) {
-    const el = document.getElementById(id);
-    el.textContent = msg; el.style.display = 'block';
-  }
-  function hideAlert(id) { document.getElementById(id).style.display = 'none'; }
+});
 
-  // ── LIFF Init ────────────────────────────────────────────────
-  async function initLiff() {
-    setLoading('กำลังเชื่อมต่อ LINE…');
-    try {
-      await liff.init({ liffId: LIFF_ID });
+async function loadCustomerData() {
+  showScreen('loading');
+  try {
+    const url = GAS_URL + '?action=getData&userId=' + encodeURIComponent(profile.userId);
+    const res = await fetch(url, { redirect: 'follow' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
 
-      if (!liff.isLoggedIn()) {
-        setLoading('กำลังนำไปยืนยันตัวตน…');
-        liff.login({ redirectUri: location.href });
-        return;
-      }
+    if (!data.success) throw new Error(data.message || 'โหลดข้อมูลไม่สำเร็จ');
 
-      setLoading('กำลังโหลดโปรไฟล์…');
-      lineProfile = await liff.getProfile();
-      document.getElementById('profile-pic').src  = lineProfile.pictureUrl || '';
-      document.getElementById('profile-name').textContent = lineProfile.displayName || '—';
-      showScreen('screen-form');
-
-    } catch (err) {
-      document.getElementById('error-msg').textContent =
-        'ไม่สามารถเชื่อมต่อ LINE ได้\n\n' + (err.message || err) +
-        '\n\nกรุณาเปิดผ่านลิงก์ LINE เท่านั้น';
-      showScreen('screen-error');
+    if (data.registered && data.installments && data.installments.length > 0) {
+      renderPortal();
+      showScreen('portal');
+    } else {
+      // ยังไม่ลงทะเบียน หรือไม่มีข้อมูล → แสดงฟอร์ม
+      showScreen('register');
     }
+  } catch (err) {
+    showError('โหลดข้อมูลไม่สำเร็จ<br>' + err.message);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  Render Portal
+// ══════════════════════════════════════════════
+function renderPortal() {
+  renderProfile();
+  renderSummary();
+  renderVehicleGroups();
+  renderHistory();
+}
+
+function renderProfile() {
+  const el = document.getElementById('profile-block');
+  const p  = data.profile || {};
+  const name = p.displayName || profile.displayName || '';
+  const pic  = p.pictureUrl  || profile.pictureUrl  || '';
+  el.innerHTML = pic
+    ? `<img class="profile-avatar" src="${esc(pic)}" onerror="this.style.display='none'" />
+       <div><div class="profile-name">${esc(name)}</div>
+       <div class="profile-phone">${p.phone ? '📞 ' + esc(p.phone) : '&nbsp;'}</div></div>`
+    : `<div class="profile-avatar-placeholder">👤</div>
+       <div><div class="profile-name">${esc(name)}</div></div>`;
+
+  document.getElementById('topbar-name').textContent = name;
+}
+
+function renderSummary() {
+  const s = data.summary || {};
+
+  // Outstanding banner
+  const obEl = document.getElementById('outstanding-banner');
+  if (s.totalDue > 0) {
+    obEl.innerHTML = `
+      <div>
+        <div class="ob-label">ยอดค้างชำระรวม</div>
+        <div class="ob-amount">${fmt(s.totalDue)} บาท</div>
+        <div class="ob-note">${s.pendingCount} งวด${s.overdueCount > 0 ? ` · เกินกำหนด ${s.overdueCount} งวด` : ''}</div>
+      </div>
+      <div class="ob-icon">${s.overdueCount > 0 ? '⚠️' : '💰'}</div>`;
+    obEl.className = 'outstanding-banner';
+  } else {
+    obEl.innerHTML = `
+      <div>
+        <div class="ob-label">สถานะการชำระ</div>
+        <div class="ob-amount" style="font-size:18px">ชำระครบทุกงวด</div>
+        <div class="ob-note">ยอดค้างชำระ 0 บาท</div>
+      </div>
+      <div class="ob-icon">✅</div>`;
+    obEl.className = 'outstanding-banner none';
   }
 
-  // ── Submit Form ──────────────────────────────────────────────
-  async function submitForm() {
-    const plateEl = document.getElementById('inp-plate');
-    const phoneEl = document.getElementById('inp-phone');
-    const plate   = plateEl.value.trim().replace(/\s+/g,'').toUpperCase();
-
-    if (!plate) {
-      plateEl.classList.add('error');
-      showAlert('alert-error','กรุณากรอกทะเบียนรถ');
-      plateEl.focus();
-      return;
-    }
-    plateEl.classList.remove('error');
-    hideAlert('alert-error');
-    hideAlert('alert-info');
-
-    const phone = phoneEl.value.trim().replace(/[^0-9]/g,'');
-    const btn   = document.getElementById('btn-submit');
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:3px;margin:0"></div><span>กำลังบันทึก…</span>';
-
-    try {
-      const payload = {
-        userId:      lineProfile.userId,
-        displayName: lineProfile.displayName,
-        pictureUrl:  lineProfile.pictureUrl || '',
-        licensePlate: plate,
-        phone:        phone
-      };
-
-      // เรียก GAS API ผ่าน GET + query string (browser follow redirect อัตโนมัติ)
-      const url = GAS_URL + '?action=register&data=' + encodeURIComponent(JSON.stringify(payload));
-      const res = await fetch(url, { redirect: 'follow' });
-
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const result = await res.json();
-      onSuccess(result);
-
-    } catch (err) {
-      btn.disabled = false;
-      btn.innerHTML = '<span>✅</span><span>ลงทะเบียน</span>';
-      showAlert('alert-error', 'เกิดข้อผิดพลาด: ' + (err.message || err));
-    }
+  // Next due banner
+  const ndEl = document.getElementById('next-due-banner');
+  const nd   = s.nextDue;
+  if (nd) {
+    const days = nd.daysLeft;
+    const col  = days <= 3 ? '#e65100' : '#1565c0';
+    ndEl.innerHTML = `
+      <div class="next-due" style="background:linear-gradient(135deg,${col},${col}cc)">
+        <div>
+          <div class="nd-label">งวดถัดไปที่ต้องชำระ</div>
+          <div class="nd-val">฿${fmt(nd.amount)}</div>
+          <div class="nd-sub">กรมธรรม์ ${esc(nd.policyNumber)} · งวด ${nd.installmentNo}/${nd.totalInstallments}</div>
+          <div class="nd-sub">ครบกำหนด ${esc(nd.dueDate)}</div>
+        </div>
+        <div class="nd-days">
+          <div class="nd-days-num">${days}</div>
+          <div class="nd-sub">วัน</div>
+        </div>
+      </div>`;
   }
 
-  // ── Success Callback ─────────────────────────────────────────
-  function onSuccess(result) {
-    if (!result.success) {
-      const btn = document.getElementById('btn-submit');
-      btn.disabled = false;
-      btn.innerHTML = '<span>✅</span><span>ลงทะเบียน</span>';
-      showAlert('alert-error', result.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
-      return;
-    }
+  // Summary strip
+  document.getElementById('summary-strip').innerHTML = `
+    <div class="summary-box">
+      <div class="val green">${s.paidCount || 0}</div>
+      <div class="lbl">ชำระแล้ว</div>
+    </div>
+    <div class="summary-box">
+      <div class="val orange">${s.pendingCount || 0}</div>
+      <div class="lbl">รอชำระ</div>
+    </div>
+    <div class="summary-box">
+      <div class="val red">${s.overdueCount || 0}</div>
+      <div class="lbl">เกินกำหนด</div>
+    </div>`;
 
-    const isAdditional = result.totalCars > 1;
-    document.getElementById('success-icon-emoji').textContent = isAdditional ? '🚗' : '🎉';
-    document.getElementById('success-title-text').textContent = isAdditional
-      ? 'เพิ่มทะเบียนรถสำเร็จ!'
-      : 'ลงทะเบียนสำเร็จ!';
-    document.getElementById('success-sub').textContent = isAdditional
-      ? 'เพิ่มรถทะเบียน ' + result.licensePlate + ' เรียบร้อย\nตอนนี้มีรถ ' + result.totalCars + ' คัน'
-      : 'คุณ ' + lineProfile.displayName + ' ลงทะเบียนแล้ว\nระบบจะแจ้งเตือนผ่อนชำระอัตโนมัติ';
+  // Quick vehicle overview (แสดงบน Overview tab)
+  const quickEl = document.getElementById('quick-vehicles');
+  const groups  = data.plateGroups || {};
+  const plates  = Object.keys(groups);
+  if (plates.length === 0) { quickEl.innerHTML = ''; return; }
 
-    if (result.pending && result.pending.length > 0) {
-      const listEl   = document.getElementById('inst-list');
-      listEl.innerHTML = '';
-      result.pending.forEach(item => {
-        const overdue = item.overdue;
-        const dl      = item.daysLeft;
-        const tagClass = overdue ? 'overdue' : (dl !== null && dl <= 7 ? 'soon' : 'ok');
-        const tagText  = overdue
-          ? '⚠️ ค้าง ' + Math.abs(dl) + ' วัน'
-          : (dl === 0 ? '📅 วันนี้!' : (dl !== null ? '⏰ อีก ' + dl + ' วัน' : '📋'));
-        listEl.innerHTML +=
-          '<div class="inst-item">' +
-          '<span>' + item.policy + ' | ' + Number(item.amount).toLocaleString() + ' บ.</span>' +
-          '<span class="tag ' + tagClass + '">' + tagText + '</span>' +
-          '</div>';
-      });
-      document.getElementById('inst-list-wrap').style.display = 'block';
-    }
-
-    showScreen('screen-success');
-  }
-
-  // ── Close / Back ─────────────────────────────────────────────
-  function closeOrBack() {
-    try { liff.closeWindow(); } catch(e) { window.history.back(); }
-  }
-
-  // ── Clear error on input ──────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('inp-plate').addEventListener('input', function() {
-      this.classList.remove('error');
-      hideAlert('alert-error');
-    });
+  let html = '';
+  plates.forEach(plate => {
+    const rows  = groups[plate];
+    const paid  = rows.filter(r => r.status === 'ชำระแล้ว').length;
+    const total = rows.length;
+    const pct   = total > 0 ? Math.round(paid / total * 100) : 0;
+    const policy = rows[0].policyNumber;
+    html += `
+      <div class="card" style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div>
+            <div style="font-size:16px;font-weight:800">🚗 ${esc(plate)}</div>
+            <div style="font-size:12px;color:var(--sub)">กรมธรรม์ ${esc(policy)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;color:var(--sub)">ชำระแล้ว</div>
+            <div style="font-size:18px;font-weight:800;color:var(--green)">${paid}/${total}</div>
+          </div>
+        </div>
+        <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
+        <div class="progress-label">${pct}% เสร็จสิ้น</div>
+      </div>`;
   });
+  quickEl.innerHTML = html;
+}
 
-  window.addEventListener('load', initLiff);
+function renderVehicleGroups() {
+  const groups = data.plateGroups || {};
+  const plates = Object.keys(groups);
+  const el     = document.getElementById('vehicle-groups');
+  if (plates.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">ยังไม่มีข้อมูลงวดชำระ</div></div>';
+    return;
+  }
+  let html = '';
+  plates.forEach(plate => {
+    const rows = groups[plate].sort((a,b) => a.installmentNo - b.installmentNo);
+    html += `
+      <div class="vehicle-group">
+        <div class="vehicle-header">🚗 ${esc(plate)}</div>
+        <div class="vehicle-body">`;
+    rows.forEach(inst => {
+      const { cls, badge, badgeCls, icon } = instStyle(inst);
+      const dueText = inst.status === 'ชำระแล้ว'
+        ? `ชำระเมื่อ ${esc(inst.paidDate || '—')}`
+        : inst.dueDate ? `ครบกำหนด ${esc(inst.dueDate)}` : '';
+      html += `
+          <div class="inst-row">
+            <div class="inst-num ${cls}">${icon}</div>
+            <div class="inst-info">
+              <div class="inst-policy">กรมธรรม์ ${esc(inst.policyNumber)} · งวด ${inst.installmentNo}/${inst.totalInstallments}</div>
+              <div class="inst-amount">฿${fmt(inst.amount)}</div>
+              <div class="inst-due">${dueText}</div>
+            </div>
+            <div class="inst-badge ${badgeCls}">${badge}</div>
+          </div>`;
+    });
+    html += `</div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+function renderHistory() {
+  const hist = data.history || [];
+  const el   = document.getElementById('history-list');
+  if (hist.length === 0) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">ยังไม่มีประวัติการชำระ</div></div>';
+    return;
+  }
+  let html = '<div class="card-title">ประวัติการชำระ</div>';
+  hist.slice(0, 50).forEach(h => {
+    const icon = h.status === 'ยืนยัน' || h.status === 'ชำระแล้ว' ? '✅' : h.status === 'ปฏิเสธ' ? '❌' : '💰';
+    html += `
+      <div class="hist-row">
+        <div class="hist-icon">${icon}</div>
+        <div class="hist-info">
+          <div class="hist-title">กรมธรรม์ ${esc(h.policyNumber)} · งวด ${h.installmentNo}</div>
+          <div class="hist-sub">${esc(h.date)}${h.note ? ' · ' + esc(h.note) : ''}</div>
+        </div>
+        <div class="hist-amount">฿${fmt(h.amount)}</div>
+      </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════
+//  Tab Switch
+// ══════════════════════════════════════════════
+function switchTab(tab) {
+  ['overview','installments','history'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', ['overview','installments','history'][i] === tab);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  Registration
+// ══════════════════════════════════════════════
+async function submitRegister() {
+  const plate = document.getElementById('input-plate').value.trim().replace(/\s+/g,'').toUpperCase();
+  const phone = document.getElementById('input-phone').value.trim();
+  const btn   = document.getElementById('btn-register');
+  const res   = document.getElementById('register-result');
+
+  if (!plate) { showToast('กรุณาใส่ทะเบียนรถ'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังดำเนินการ...';
+  res.innerHTML = '';
+
+  try {
+    const payload = {
+      userId:      profile.userId,
+      displayName: profile.displayName,
+      pictureUrl:  profile.pictureUrl || '',
+      licensePlate: plate,
+      phone: phone,
+    };
+    const url = GAS_URL + '?action=register&data=' + encodeURIComponent(JSON.stringify(payload));
+    const r   = await fetch(url, { redirect: 'follow' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const result = await r.json();
+
+    if (result.success) {
+      res.innerHTML = `
+        <div class="result-box">
+          <div class="result-icon">🎉</div>
+          <div class="result-title">ลงทะเบียนสำเร็จ!</div>
+          <div class="result-sub">ทะเบียน <b>${esc(result.licensePlate)}</b><br>
+          ระบบจะแจ้งเตือนผ่อนชำระผ่าน LINE อัตโนมัติ</div>
+          <button class="btn-secondary" onclick="loadCustomerData()">ดูกรมธรรม์ของฉัน →</button>
+        </div>`;
+      btn.style.display = 'none';
+    } else {
+      showToast('❌ ' + (result.message || 'ลงทะเบียนไม่สำเร็จ'));
+      btn.disabled = false;
+      btn.textContent = '✅ ลงทะเบียน';
+    }
+  } catch (err) {
+    showToast('เกิดข้อผิดพลาด: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = '✅ ลงทะเบียน';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  Helpers
+// ══════════════════════════════════════════════
+function instStyle(inst) {
+  if (inst.status === 'ชำระแล้ว')
+    return { cls:'paid', badge:'ชำระแล้ว', badgeCls:'badge-paid', icon:'✓' };
+  if (inst.overdue)
+    return { cls:'overdue', badge:'เกินกำหนด', badgeCls:'badge-overdue', icon:'!' };
+  if (inst.daysLeft !== null && inst.daysLeft <= 7)
+    return { cls:'upcoming', badge:`${inst.daysLeft} วัน`, badgeCls:'badge-soon', icon:inst.installmentNo };
+  return { cls:'normal', badge:'รอชำระ', badgeCls:'badge-pending', icon:inst.installmentNo };
+}
+
+function fmt(n) {
+  return Number(n || 0).toLocaleString('th-TH');
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showScreen(name) {
+  document.getElementById('screen-loading').style.display = name === 'loading' ? 'flex' : 'none';
+  ['portal','register','error'].forEach(s => {
+    const el = document.getElementById('screen-' + s);
+    if (el) el.classList.toggle('active', s === name);
+  });
+}
+
+function showError(msg) {
+  document.getElementById('error-msg').innerHTML = msg;
+  showScreen('error');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
 </script>
 </body>
 </html>
