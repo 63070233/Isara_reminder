@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ลงทะเบียน — ISARA INTER BROKER</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Noto Sans Thai', sans-serif;
+      background: #f0f4f8; min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; padding-bottom: 40px;
+    }
+    .top-bar {
+      width: 100%; background: #06c755; padding: 16px 20px 14px;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+    .top-bar-text h1 { font-size: 15px; font-weight: 700; color: #fff; line-height: 1.2; }
+    .top-bar-text p  { font-size: 11px; color: rgba(255,255,255,.85); }
+    .card {
+      background: #fff; border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.08);
+      padding: 28px 24px; width: calc(100% - 32px);
+      max-width: 420px; margin-top: 20px;
+    }
+    /* Loading */
+    .loading-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; padding:40px 0; }
+    .spinner {
+      width:44px; height:44px; border:4px solid #e0e0e0;
+      border-top-color:#06c755; border-radius:50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loading-text { color:#888; font-size:14px; }
+    /* Profile strip */
+    .profile-strip {
+      display:flex; align-items:center; gap:14px;
+      background:#f6fef9; border:1px solid #b7eacb;
+      border-radius:12px; padding:12px 16px; margin-bottom:24px;
+    }
+    .profile-strip img { width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #06c755; }
+    .profile-strip .name { font-weight:700; color:#1a1a1a; font-size:15px; }
+    .profile-strip .sub  { font-size:12px; color:#888; }
+    /* Form */
+    .section-title { font-size:13px; font-weight:700; color:#555; text-transform:uppercase; letter-spacing:.5px; margin-bottom:12px; }
+    .field { margin-bottom:20px; }
+    .field label { display:block; font-size:13px; font-weight:600; color:#444; margin-bottom:6px; }
+    .field label .req { color:#e53935; margin-left:2px; }
+    .field input {
+      width:100%; padding:12px 16px; border:1.5px solid #ddd;
+      border-radius:10px; font-size:16px; color:#1a1a1a;
+      transition:border-color .2s; outline:none;
+    }
+    .field input:focus { border-color:#06c755; }
+    .field input.error { border-color:#e53935; }
+    .field .hint { font-size:11px; color:#999; margin-top:4px; }
+    .err-msg { display:none; font-size:12px; color:#e53935; margin-top:4px; }
+    .field input.error ~ .err-msg { display:block; }
+    /* Alert */
+    .alert {
+      padding:12px 16px; border-radius:10px; font-size:13px;
+      margin-bottom:16px; display:none; line-height:1.5;
+    }
+    .alert.info  { background:#e3f2fd; color:#1565c0; border-left:4px solid #1565c0; display:block; }
+    .alert.error { background:#ffebee; color:#c62828; border-left:4px solid #e53935; }
+    /* Button */
+    .btn-submit {
+      width:100%; padding:15px; background:#06c755; color:#fff;
+      font-size:16px; font-weight:700; border:none; border-radius:12px;
+      cursor:pointer; display:flex; align-items:center; justify-content:center;
+      gap:8px; transition:opacity .2s;
+    }
+    .btn-submit:disabled { opacity:.6; cursor:not-allowed; }
+    /* Success */
+    .success-icon { font-size:60px; text-align:center; margin:8px 0 16px; }
+    .success-title { font-size:22px; font-weight:800; color:#1a1a1a; text-align:center; }
+    .success-sub   { font-size:14px; color:#666; text-align:center; margin:8px 0 20px; line-height:1.6; }
+    .installment-list { background:#f8f9fa; border-radius:12px; padding:16px; margin-bottom:16px; }
+    .inst-item {
+      display:flex; justify-content:space-between; padding:8px 0;
+      border-bottom:1px solid #eee; font-size:13px;
+    }
+    .inst-item:last-child { border-bottom:none; }
+    .inst-item .tag { font-size:11px; padding:2px 8px; border-radius:12px; font-weight:600; }
+    .tag.soon   { background:#fff3e0; color:#e65100; }
+    .tag.overdue{ background:#ffebee; color:#c62828; }
+    .tag.ok     { background:#e8f5e9; color:#2e7d32; }
+    .btn-close {
+      width:100%; padding:14px; background:#f5f5f5; color:#555;
+      font-size:15px; font-weight:600; border:none; border-radius:12px; cursor:pointer;
+    }
+    .btn-retry {
+      width:100%; padding:14px; background:#06c755; color:#fff;
+      font-size:15px; font-weight:600; border:none; border-radius:12px; cursor:pointer; margin-top:12px;
+    }
+    /* Error screen */
+    .error-icon  { font-size:48px; text-align:center; margin:8px 0 12px; }
+    .error-title { font-size:18px; font-weight:700; color:#c62828; text-align:center; }
+    .error-sub   { font-size:13px; color:#777; text-align:center; margin:8px 0 20px; line-height:1.6; }
+    .multi-car-banner {
+      background:#e3f2fd; border-radius:10px; padding:12px 16px;
+      font-size:12px; color:#1565c0; margin-bottom:16px; line-height:1.5;
+    }
+    /* Hidden */
+    #screen-form, #screen-success, #screen-error { display:none; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-text">
+    <h1>ISARA INTER BROKER</h1>
+    <p>ระบบลงทะเบียนผ่อนชำระ</p>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="card" id="screen-loading">
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <p class="loading-text" id="loading-text">กำลังเชื่อมต่อ LINE…</p>
+  </div>
+</div>
+
+<!-- FORM -->
+<div class="card" id="screen-form">
+  <div class="profile-strip">
+    <img id="profile-pic" src="" alt="profile" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 48 48%22><circle cx=%2224%22 cy=%2224%22 r=%2224%22 fill=%22%2306c755%22/><text x=%2224%22 y=%2230%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2220%22>👤</text></svg>'">
+    <div>
+      <div class="name" id="profile-name">กำลังโหลด…</div>
+      <div class="sub">LINE Member</div>
+    </div>
+  </div>
+
+  <div class="multi-car-banner">
+    🚗 มีรถหลายคัน? ลงทะเบียนทีละคัน แล้วกลับมากรอกคันต่อไปได้เลย
+  </div>
+
+  <div class="alert info" id="alert-info">กรอกทะเบียนรถที่ต้องการเชื่อมกับ LINE ของคุณ</div>
+  <div class="alert error" id="alert-error"></div>
+
+  <p class="section-title">ข้อมูลการลงทะเบียน</p>
+
+  <div class="field">
+    <label>ทะเบียนรถ <span class="req">*</span></label>
+    <input type="text" id="inp-plate" placeholder="เช่น กข1234 หรือ 1กข1234"
+           maxlength="10" autocomplete="off" autocapitalize="characters"
+           oninput="this.value=this.value.replace(/\s+/g,'').toUpperCase()">
+    <div class="err-msg">กรุณากรอกทะเบียนรถ</div>
+    <div class="hint">ตัวอักษรและตัวเลข ไม่ต้องมีช่องว่าง</div>
+  </div>
+
+  <div class="field">
+    <label>เบอร์โทรศัพท์ <span style="color:#999;font-weight:400">(ไม่บังคับ)</span></label>
+    <input type="tel" id="inp-phone" placeholder="เช่น 0812345678" maxlength="10">
+    <div class="hint">สำหรับติดต่อสำรอง</div>
+  </div>
+
+  <button class="btn-submit" id="btn-submit" onclick="submitForm()">
+    <span>✅</span><span>ลงทะเบียน</span>
+  </button>
+</div>
+
+<!-- SUCCESS -->
+<div class="card" id="screen-success">
+  <div class="success-icon" id="success-icon-emoji">🎉</div>
+  <div class="success-title" id="success-title-text">ลงทะเบียนสำเร็จ!</div>
+  <p class="success-sub" id="success-sub"></p>
+  <div class="installment-list" id="inst-list-wrap" style="display:none">
+    <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:#444">📋 งวดชำระที่รอดำเนินการ</div>
+    <div id="inst-list"></div>
+  </div>
+  <button class="btn-close" onclick="closeOrBack()">ปิด</button>
+</div>
+
+<!-- ERROR -->
+<div class="card" id="screen-error">
+  <div class="error-icon">⚠️</div>
+  <div class="error-title">เกิดข้อผิดพลาด</div>
+  <p class="error-sub" id="error-msg">ไม่สามารถเชื่อมต่อได้ กรุณาลองใหม่</p>
+  <button class="btn-retry" onclick="initLiff()">ลองใหม่อีกครั้ง</button>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────────────────────
+  //  ⚙️  CONFIG — แก้ก่อน deploy
+  // ─────────────────────────────────────────────────────────────
+  const LIFF_ID = 'YOUR_LIFF_ID';       // ← LIFF ID จาก LINE Developers
+  const GAS_URL = 'YOUR_GAS_WEB_APP_URL'; // ← Web App URL จาก GAS (ลงท้าย /exec)
+  // ─────────────────────────────────────────────────────────────
+
+  let lineProfile = null;
+
+  // ── Screen helpers ───────────────────────────────────────────
+  function showScreen(id) {
+    ['screen-loading','screen-form','screen-success','screen-error']
+      .forEach(s => document.getElementById(s).style.display = s===id ? 'block' : 'none');
+  }
+  function setLoading(text) {
+    document.getElementById('loading-text').textContent = text;
+    showScreen('screen-loading');
+  }
+  function showAlert(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.style.display = 'block';
+  }
+  function hideAlert(id) { document.getElementById(id).style.display = 'none'; }
+
+  // ── LIFF Init ────────────────────────────────────────────────
+  async function initLiff() {
+    setLoading('กำลังเชื่อมต่อ LINE…');
+    try {
+      await liff.init({ liffId: LIFF_ID });
+
+      if (!liff.isLoggedIn()) {
+        setLoading('กำลังนำไปยืนยันตัวตน…');
+        liff.login({ redirectUri: location.href });
+        return;
+      }
+
+      setLoading('กำลังโหลดโปรไฟล์…');
+      lineProfile = await liff.getProfile();
+      document.getElementById('profile-pic').src  = lineProfile.pictureUrl || '';
+      document.getElementById('profile-name').textContent = lineProfile.displayName || '—';
+      showScreen('screen-form');
+
+    } catch (err) {
+      document.getElementById('error-msg').textContent =
+        'ไม่สามารถเชื่อมต่อ LINE ได้\n\n' + (err.message || err) +
+        '\n\nกรุณาเปิดผ่านลิงก์ LINE เท่านั้น';
+      showScreen('screen-error');
+    }
+  }
+
+  // ── Submit Form ──────────────────────────────────────────────
+  async function submitForm() {
+    const plateEl = document.getElementById('inp-plate');
+    const phoneEl = document.getElementById('inp-phone');
+    const plate   = plateEl.value.trim().replace(/\s+/g,'').toUpperCase();
+
+    if (!plate) {
+      plateEl.classList.add('error');
+      showAlert('alert-error','กรุณากรอกทะเบียนรถ');
+      plateEl.focus();
+      return;
+    }
+    plateEl.classList.remove('error');
+    hideAlert('alert-error');
+    hideAlert('alert-info');
+
+    const phone = phoneEl.value.trim().replace(/[^0-9]/g,'');
+    const btn   = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:3px;margin:0"></div><span>กำลังบันทึก…</span>';
+
+    try {
+      const payload = {
+        userId:      lineProfile.userId,
+        displayName: lineProfile.displayName,
+        pictureUrl:  lineProfile.pictureUrl || '',
+        licensePlate: plate,
+        phone:        phone
+      };
+
+      // เรียก GAS API ผ่าน GET + query string (browser follow redirect อัตโนมัติ)
+      const url = GAS_URL + '?action=register&data=' + encodeURIComponent(JSON.stringify(payload));
+      const res = await fetch(url, { redirect: 'follow' });
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const result = await res.json();
+      onSuccess(result);
+
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>✅</span><span>ลงทะเบียน</span>';
+      showAlert('alert-error', 'เกิดข้อผิดพลาด: ' + (err.message || err));
+    }
+  }
+
+  // ── Success Callback ─────────────────────────────────────────
+  function onSuccess(result) {
+    if (!result.success) {
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = false;
+      btn.innerHTML = '<span>✅</span><span>ลงทะเบียน</span>';
+      showAlert('alert-error', result.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+      return;
+    }
+
+    const isAdditional = result.totalCars > 1;
+    document.getElementById('success-icon-emoji').textContent = isAdditional ? '🚗' : '🎉';
+    document.getElementById('success-title-text').textContent = isAdditional
+      ? 'เพิ่มทะเบียนรถสำเร็จ!'
+      : 'ลงทะเบียนสำเร็จ!';
+    document.getElementById('success-sub').textContent = isAdditional
+      ? 'เพิ่มรถทะเบียน ' + result.licensePlate + ' เรียบร้อย\nตอนนี้มีรถ ' + result.totalCars + ' คัน'
+      : 'คุณ ' + lineProfile.displayName + ' ลงทะเบียนแล้ว\nระบบจะแจ้งเตือนผ่อนชำระอัตโนมัติ';
+
+    if (result.pending && result.pending.length > 0) {
+      const listEl   = document.getElementById('inst-list');
+      listEl.innerHTML = '';
+      result.pending.forEach(item => {
+        const overdue = item.overdue;
+        const dl      = item.daysLeft;
+        const tagClass = overdue ? 'overdue' : (dl !== null && dl <= 7 ? 'soon' : 'ok');
+        const tagText  = overdue
+          ? '⚠️ ค้าง ' + Math.abs(dl) + ' วัน'
+          : (dl === 0 ? '📅 วันนี้!' : (dl !== null ? '⏰ อีก ' + dl + ' วัน' : '📋'));
+        listEl.innerHTML +=
+          '<div class="inst-item">' +
+          '<span>' + item.policy + ' | ' + Number(item.amount).toLocaleString() + ' บ.</span>' +
+          '<span class="tag ' + tagClass + '">' + tagText + '</span>' +
+          '</div>';
+      });
+      document.getElementById('inst-list-wrap').style.display = 'block';
+    }
+
+    showScreen('screen-success');
+  }
+
+  // ── Close / Back ─────────────────────────────────────────────
+  function closeOrBack() {
+    try { liff.closeWindow(); } catch(e) { window.history.back(); }
+  }
+
+  // ── Clear error on input ──────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('inp-plate').addEventListener('input', function() {
+      this.classList.remove('error');
+      hideAlert('alert-error');
+    });
+  });
+
+  window.addEventListener('load', initLiff);
+</script>
+</body>
+</html>
