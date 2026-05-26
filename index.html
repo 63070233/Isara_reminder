@@ -282,7 +282,8 @@
   <!-- Tab Bar -->
   <div class="tabbar">
     <button class="tab-btn active" onclick="switchTab('overview')">📊 ภาพรวม</button>
-    <button class="tab-btn" onclick="switchTab('installments')">📋 งวดทั้งหมด</button>
+    <button class="tab-btn" onclick="switchTab('installments')">📋 งวด</button>
+    <button class="tab-btn" onclick="switchTab('policies')">🛡️ กธ. <span id="renewal-badge" style="display:none;background:#e53935;color:#fff;border-radius:99px;font-size:10px;padding:1px 5px;margin-left:2px;"></span></button>
     <button class="tab-btn" onclick="switchTab('history')">🧾 ประวัติ</button>
   </div>
 
@@ -309,6 +310,11 @@
   <!-- ── Tab: Installments ── -->
   <div id="tab-installments" class="content" style="display:none;">
     <div id="vehicle-groups"></div>
+  </div>
+
+  <!-- ── Tab: Policies (ต่ออายุกรมธรรม์) ── -->
+  <div id="tab-policies" class="content" style="display:none;">
+    <div id="policy-list"></div>
   </div>
 
   <!-- ── Tab: History ── -->
@@ -366,8 +372,8 @@
 // ══════════════════════════════════════════════
 //  CONFIG — แก้ตรงนี้
 // ══════════════════════════════════════════════
-  const LIFF_ID = '2010186323-8y5GORz2';       // ← LIFF ID จาก LINE Developers
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzte-NzPR1_NuGkxUC2bajoT2Un3k15FMT1HT-f8fo-6uNBwrheAlfRf0-MrNwOiPmNrg/exec'; // ← Web App URL จาก GAS (ลงท้าย /exec)
+const LIFF_ID = '2010186323-8y5GORz2';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzte-NzPR1_NuGkxUC2bajoT2Un3k15FMT1HT-f8fo-6uNBwrheAlfRf0-MrNwOiPmNrg/exec'; // ← Web App URL จาก GAS (ลงท้าย /exec)
 
 // ══════════════════════════════════════════════
 //  State
@@ -420,6 +426,7 @@ function renderPortal() {
   renderProfile();
   renderSummary();
   renderVehicleGroups();
+  renderPolicies();
   renderHistory();
 }
 
@@ -567,6 +574,69 @@ function renderVehicleGroups() {
   el.innerHTML = html;
 }
 
+function renderPolicies() {
+  const policies = data.policies || [];
+  const el       = document.getElementById('policy-list');
+
+  // badge จำนวนต้องต่ออายุ
+  const urgentCount = policies.filter(p => p.urgent).length;
+  const badge = document.getElementById('renewal-badge');
+  if (urgentCount > 0) { badge.textContent = urgentCount; badge.style.display = 'inline'; }
+  else { badge.style.display = 'none'; }
+
+  if (policies.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🛡️</div>
+      <div class="empty-text">ยังไม่มีข้อมูลกรมธรรม์<br><span style="font-size:12px">แอดมินจะเพิ่มข้อมูลให้ในชีต "กรมธรรม์"</span></div></div>`;
+    return;
+  }
+
+  let html = '';
+  policies.forEach(pol => {
+    const { color, bg, label, icon } = polStyle(pol);
+    html += `
+      <div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div>
+            <div style="font-size:15px;font-weight:800">🚗 ${esc(pol.licensePlate || pol.policyNumber)}</div>
+            <div style="font-size:12px;color:var(--sub)">${esc(pol.policyType)}${pol.insurer ? ' · ' + esc(pol.insurer) : ''}</div>
+          </div>
+          <div style="background:${bg};color:${color};font-size:11px;font-weight:700;
+                      padding:3px 10px;border-radius:99px;white-space:nowrap">${icon} ${label}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+          <div style="color:var(--sub)">เลขกรมธรรม์</div>
+          <div style="font-weight:600;text-align:right">${esc(pol.policyNumber)}</div>
+          ${pol.startDate ? `<div style="color:var(--sub)">วันเริ่มต้น</div>
+          <div style="text-align:right">${esc(pol.startDate)}</div>` : ''}
+          <div style="color:var(--sub)">วันหมดอายุ</div>
+          <div style="font-weight:700;color:${color};text-align:right">${esc(pol.expiryDate)}</div>
+          ${pol.premium > 0 ? `<div style="color:var(--sub)">เบี้ยประกัน</div>
+          <div style="text-align:right">฿${fmt(pol.premium)}</div>` : ''}
+        </div>
+        ${pol.urgent ? `
+        <div style="margin-top:10px;background:#fff3e0;border-radius:8px;padding:8px 10px;
+                    font-size:12px;color:#e65100;display:flex;align-items:center;gap:6px">
+          ⚠️ กรุณาติดต่อต่ออายุก่อนวันหมดอายุ
+        </div>` : ''}
+      </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function polStyle(pol) {
+  if (pol.status === 'ต่ออายุแล้ว')
+    return { color:'#1565c0', bg:'#e3f2fd', label:'ต่ออายุแล้ว', icon:'✅' };
+  if (pol.status === 'ยกเลิก')
+    return { color:'#757575', bg:'#f5f5f5', label:'ยกเลิก', icon:'—' };
+  if (pol.daysLeft !== null && pol.daysLeft <= 0)
+    return { color:'#c62828', bg:'#ffebee', label:'หมดอายุแล้ว', icon:'🚨' };
+  if (pol.daysLeft !== null && pol.daysLeft <= 7)
+    return { color:'#e53935', bg:'#ffebee', label:`อีก ${pol.daysLeft} วัน`, icon:'⚠️' };
+  if (pol.daysLeft !== null && pol.daysLeft <= 30)
+    return { color:'#e65100', bg:'#fff3e0', label:`อีก ${pol.daysLeft} วัน`, icon:'🔔' };
+  return { color:'#2e7d32', bg:'#e8f5e9', label:'มีผลบังคับ', icon:'🛡️' };
+}
+
 function renderHistory() {
   const hist = data.history || [];
   const el   = document.getElementById('history-list');
@@ -594,11 +664,11 @@ function renderHistory() {
 //  Tab Switch
 // ══════════════════════════════════════════════
 function switchTab(tab) {
-  ['overview','installments','history'].forEach(t => {
+  ['overview','installments','policies','history'].forEach(t => {
     document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
   document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-    btn.classList.toggle('active', ['overview','installments','history'][i] === tab);
+    btn.classList.toggle('active', ['overview','installments','policies','history'][i] === tab);
   });
 }
 
