@@ -372,8 +372,8 @@
 // ══════════════════════════════════════════════
 //  CONFIG — แก้ตรงนี้
 // ══════════════════════════════════════════════
- const LIFF_ID = '2010186323-8y5GORz2';       // ← LIFF ID จาก LINE Developers
- const GAS_URL = 'https://script.google.com/macros/s/AKfycbzte-NzPR1_NuGkxUC2bajoT2Un3k15FMT1HT-f8fo-6uNBwrheAlfRf0-MrNwOiPmNrg/exec'; // ← Web App URL จาก GAS (ลงท้าย /exec)
+const LIFF_ID = 'YOUR_LIFF_ID';        // ← LIFF ID จาก LINE Developers
+const GAS_URL = 'YOUR_GAS_WEB_APP_URL'; // ← GAS Web App URL
 
 // ══════════════════════════════════════════════
 //  State
@@ -549,9 +549,18 @@ function renderVehicleGroups() {
   let html = '';
   plates.forEach(plate => {
     const rows = groups[plate].sort((a,b) => a.installmentNo - b.installmentNo);
+    // หา docUrl จากแถวแรกสุดที่มี
+    const docUrl = (rows.find(r => r.docUrl) || {}).docUrl || '';
+    const docBtn = docUrl
+      ? `<a href="${docUrl}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;
+           font-size:12px;color:#1565c0;text-decoration:none;background:#e3f2fd;
+           padding:3px 10px;border-radius:8px;margin-left:8px;font-weight:600">📄 ดูกรมธรรม์</a>`
+      : '';
     html += `
       <div class="vehicle-group">
-        <div class="vehicle-header">🚗 ${esc(plate)}</div>
+        <div class="vehicle-header" style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+          🚗 ${esc(plate)}${docBtn}
+        </div>
         <div class="vehicle-body">`;
     rows.forEach(inst => {
       const { cls, badge, badgeCls, icon } = instStyle(inst);
