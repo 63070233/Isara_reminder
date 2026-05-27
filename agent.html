@@ -229,7 +229,11 @@
 // ══════════════════════════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════════════════════════
-const GAS_URL = 'https://script.google.com/macros/s/AKfycbzte-NzPR1_NuGkxUC2bajoT2Un3k15FMT1HT-f8fo-6uNBwrheAlfRf0-MrNwOiPmNrg/exec';
+const GAS_URL    = 'https://script.google.com/macros/s/AKfycbzte-NzPR1_NuGkxUC2bajoT2Un3k15FMT1HT-f8fo-6uNBwrheAlfRf0-MrNwOiPmNrg/exec';
+// ↑ ใช้สำหรับ GET requests (login, loadCustomers, loadSlips)
+
+const WORKER_URL = 'https://isara-reminder.nattp-isr.workers.dev';
+// ↑ ใช้สำหรับ POST (ส่งสลิป) — Worker forward POST → GAS โดยไม่สูญเสีย body จาก 302 redirect
 
 // ══════════════════════════════════════════════════════════════
 //  STATE
@@ -495,7 +499,7 @@ function submitSlip() {
     note:        document.getElementById('slipNote').value,
   });
 
-  fetch(GAS_URL + '?action=submitSlip&token=' + encodeURIComponent(agentToken), {
+  fetch(WORKER_URL + '?action=submitSlip&token=' + encodeURIComponent(agentToken), {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
     body:    JSON.stringify(payload),
