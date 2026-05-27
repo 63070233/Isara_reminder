@@ -127,6 +127,61 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
 
 .screen{display:none}.screen.active{display:block}
 #screen-login{display:flex}
+
+/* ── Nav Tabs ── */
+.nav-tabs{display:flex;background:#fff;border-bottom:2px solid var(--border);position:sticky;top:52px;z-index:99}
+.ntab{flex:1;text-align:center;padding:11px 4px;font-size:13px;font-weight:600;cursor:pointer;
+  color:var(--sub);border-bottom:3px solid transparent;background:none;border-top:none;border-left:none;border-right:none;
+  font-family:inherit;transition:.2s}
+.ntab.active{color:var(--orange);border-bottom-color:var(--orange)}
+.ntab-badge{background:var(--red);color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:3px}
+
+/* ── Slip Section ── */
+.slip-wrap{padding:16px;max-width:700px;margin:0 auto}
+.slip-filter{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.slip-card{background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.08);
+  margin-bottom:12px;overflow:hidden;border-left:4px solid var(--border)}
+.slip-card.pending{border-left-color:var(--amber)}
+.slip-card.approved{border-left-color:var(--green)}
+.slip-card.rejected{border-left-color:var(--red)}
+.slip-head{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.slip-title{font-weight:700;font-size:14px;flex:1}
+.slip-time{font-size:11px;color:var(--sub)}
+.slip-body{display:flex;gap:12px;padding:0 14px 12px;align-items:flex-start}
+.slip-img{width:90px;height:90px;border-radius:8px;object-fit:cover;border:1px solid var(--border);cursor:pointer;flex-shrink:0}
+.slip-img-ph{width:90px;height:90px;border-radius:8px;background:var(--gray);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;color:#bbb;font-size:32px;flex-shrink:0}
+.slip-meta{flex:1;font-size:13px;color:var(--text);line-height:1.8}
+.slip-meta .amount{font-size:16px;font-weight:800;color:var(--orange)}
+.slip-actions{display:flex;gap:8px;padding:0 14px 14px}
+.btn-approve{flex:1;padding:9px;background:#2e7d32;color:#fff;border:none;border-radius:8px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-reject{flex:1;padding:9px;background:var(--red);color:#fff;border:none;border-radius:8px;
+  font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+.slip-note{padding:8px 14px;font-size:12px;background:#fafafa;border-top:1px solid var(--border);color:var(--sub)}
+
+/* ── Agent Section ── */
+.agent-wrap{padding:16px;max-width:600px;margin:0 auto}
+.agent-card{background:#fff;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.08);
+  margin-bottom:10px;padding:14px;display:flex;align-items:center;gap:12px}
+.agent-ic{width:42px;height:42px;border-radius:50%;background:#ede7f6;
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.agent-name{font-weight:700;font-size:14px}
+.agent-sub{font-size:12px;color:var(--sub);margin-top:2px}
+.agent-status{margin-left:auto;font-size:11px;padding:3px 10px;border-radius:12px}
+.as-active{background:#e8f5e9;color:var(--green)}
+.as-inactive{background:var(--red-l);color:var(--red)}
+.btn-add-agent{width:100%;padding:12px;background:var(--orange);color:#fff;border:none;
+  border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:16px}
+
+/* ── Image Viewer ── */
+.img-viewer{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;
+  display:none;align-items:center;justify-content:center}
+.img-viewer.open{display:flex}
+.img-viewer img{max-width:95%;max-height:95%;object-fit:contain;border-radius:8px}
+.img-viewer-close{position:absolute;top:16px;right:16px;color:#fff;font-size:28px;cursor:pointer;
+  background:rgba(255,255,255,.15);border-radius:50%;width:42px;height:42px;
+  display:flex;align-items:center;justify-content:center}
 </style>
 </head>
 <body>
@@ -157,6 +212,15 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
     </div>
   </div>
 
+  <!-- Nav Tabs -->
+  <div class="nav-tabs">
+    <button class="ntab active" id="ntab-customers" onclick="switchAdminTab('customers')">👥 ลูกค้า</button>
+    <button class="ntab" id="ntab-slips" onclick="switchAdminTab('slips')">📎 สลิป <span class="ntab-badge" id="slipBadge" style="display:none">0</span></button>
+    <button class="ntab" id="ntab-agents" onclick="switchAdminTab('agents')">🤝 ตัวแทน</button>
+  </div>
+
+  <!-- ── ลูกค้า ── -->
+  <div id="section-customers">
   <div class="stats-bar" id="stats-bar"></div>
 
   <div class="toolbar">
@@ -176,6 +240,29 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
   </div>
 
   <div id="card-area" class="cust-grid"></div>
+  </div><!-- /section-customers -->
+
+  <!-- ── สลิป ── -->
+  <div id="section-slips" style="display:none">
+    <div class="slip-wrap">
+      <div class="slip-filter">
+        <button class="ftab active" onclick="setSlipFilter('all',this)">ทั้งหมด</button>
+        <button class="ftab" onclick="setSlipFilter('pending',this)">⏳ รอตรวจ</button>
+        <button class="ftab" onclick="setSlipFilter('approved',this)">✅ อนุมัติ</button>
+        <button class="ftab" onclick="setSlipFilter('rejected',this)">❌ ปฏิเสธ</button>
+      </div>
+      <div id="slip-list"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+
+  <!-- ── ตัวแทน ── -->
+  <div id="section-agents" style="display:none">
+    <div class="agent-wrap">
+      <button class="btn-add-agent" onclick="openCreateAgentModal()">➕ เพิ่มตัวแทนใหม่</button>
+      <div id="agent-list"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ════ MODAL: แก้ LINE ID ════ -->
@@ -222,6 +309,74 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
   </div>
 </div>
 
+<!-- ════ MODAL: Approve Slip ════ -->
+<div class="modal-overlay" id="modal-approve" style="display:none">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">✅ อนุมัติสลิป</div>
+      <button class="modal-close" onclick="closeModal('modal-approve')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-info" id="approve-info"></div>
+      <label class="modal-label">หมายเหตุ (ถ้ามี)</label>
+      <input class="modal-input" id="approve-note" placeholder="เช่น ตรวจสอบแล้ว ยืนยันยอด">
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal('modal-approve')">ยกเลิก</button>
+      <button class="btn-confirm" style="background:#2e7d32" onclick="confirmApproveSlip()">✅ อนุมัติ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: Reject Slip ════ -->
+<div class="modal-overlay" id="modal-reject" style="display:none">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">❌ ปฏิเสธสลิป</div>
+      <button class="modal-close" onclick="closeModal('modal-reject')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-info" id="reject-info"></div>
+      <label class="modal-label">สาเหตุที่ปฏิเสธ <span style="color:var(--red)">*</span></label>
+      <input class="modal-input" id="reject-reason" placeholder="เช่น สลิปไม่ชัด, ยอดไม่ตรง">
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal('modal-reject')">ยกเลิก</button>
+      <button class="btn-confirm" style="background:var(--red)" onclick="confirmRejectSlip()">❌ ปฏิเสธ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: Create Agent ════ -->
+<div class="modal-overlay" id="modal-agent" style="display:none">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">➕ เพิ่มตัวแทน</div>
+      <button class="modal-close" onclick="closeModal('modal-agent')">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="modal-label">ชื่อตัวแทน <span style="color:var(--red)">*</span></label>
+      <input class="modal-input" id="agent-name" placeholder="ชื่อ-นามสกุล">
+      <label class="modal-label">เบอร์โทร</label>
+      <input class="modal-input" id="agent-phone" placeholder="08x-xxx-xxxx">
+      <label class="modal-label">LINE User ID</label>
+      <input class="modal-input" id="agent-lineid" placeholder="Uxxxxxxxx (สำหรับรับการแจ้งเตือน)">
+      <label class="modal-label">รหัสผ่าน (token) <span style="color:var(--red)">*</span></label>
+      <input class="modal-input" id="agent-token" placeholder="ตั้งรหัสสำหรับ login ที่ agent.html">
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal('modal-agent')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="confirmCreateAgent()">💾 สร้างตัวแทน</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Viewer -->
+<div class="img-viewer" id="img-viewer">
+  <div class="img-viewer-close" onclick="document.getElementById('img-viewer').classList.remove('open')">✕</div>
+  <img id="img-viewer-src" src="">
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -231,8 +386,12 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
 let GAS_URL = localStorage.getItem('isara_gas_url') || '';
 let TOKEN   = localStorage.getItem('isara_token')   || '';
 let allData = [];
+let allSlips = [];
+let allAgents = [];
 let currentFilter = 'all';
+let currentSlipFilter = 'all';
 let activeModal = { plate:'', userId:'' };
+let activeSlipId = '';
 
 // ── Auto-login if saved ─────────────────
 window.addEventListener('load', () => {
@@ -287,6 +446,28 @@ async function loadData() {
   allData = res.customers || [];
   renderStats(res.stats || {});
   renderCards();
+  loadSlips();
+  loadAgents();
+}
+
+async function loadSlips() {
+  document.getElementById('slip-list').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  const res = await apiGet('getPendingSlips');
+  if (!res || !res.success) { document.getElementById('slip-list').innerHTML = '<div class="empty-state">⚠️ โหลดสลิปไม่ได้</div>'; return; }
+  allSlips = res.slips || [];
+  const pending = allSlips.filter(s => s.status === 'pending').length;
+  const badge = document.getElementById('slipBadge');
+  if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+  else badge.style.display = 'none';
+  renderSlips();
+}
+
+async function loadAgents() {
+  document.getElementById('agent-list').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  const res = await apiGet('getAgents');
+  if (!res || !res.success) { document.getElementById('agent-list').innerHTML = '<div class="empty-state">⚠️ โหลดข้อมูลตัวแทนไม่ได้</div>'; return; }
+  allAgents = res.agents || [];
+  renderAgents();
 }
 
 async function apiGet(action, params={}) {
@@ -482,6 +663,169 @@ async function submitSendMsg() {
 
 function closeModal(id) {
   document.getElementById(id).style.display = 'none';
+}
+
+// ══════════════════════════════════════════
+//  NAV TABS
+// ══════════════════════════════════════════
+function switchAdminTab(name) {
+  ['customers','slips','agents'].forEach(t => {
+    document.getElementById('section-'+t).style.display = t===name ? '' : 'none';
+    document.getElementById('ntab-'+t).classList.toggle('active', t===name);
+  });
+  if (name === 'slips'  && allSlips.length  === 0) loadSlips();
+  if (name === 'agents' && allAgents.length === 0) loadAgents();
+}
+
+// ══════════════════════════════════════════
+//  SLIPS
+// ══════════════════════════════════════════
+function setSlipFilter(f, el) {
+  currentSlipFilter = f;
+  document.querySelectorAll('.slip-filter .ftab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderSlips();
+}
+
+function renderSlips() {
+  const list = allSlips.filter(s => currentSlipFilter === 'all' || s.status === currentSlipFilter);
+  if (!list.length) {
+    document.getElementById('slip-list').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">📎</div>ไม่มีสลิปในหมวดนี้</div>';
+    return;
+  }
+  document.getElementById('slip-list').innerHTML = list.map(slipCardHTML).join('');
+}
+
+function slipCardHTML(s) {
+  const statusLabel = s.status==='approved' ? '✅ อนุมัติแล้ว' : s.status==='rejected' ? '❌ ปฏิเสธ' : '⏳ รอตรวจสอบ';
+  const imgHtml = s.imageUrl
+    ? `<img class="slip-img" src="${esc(s.imageUrl)}" onclick="viewImg('${esc(s.imageUrl)}')" alt="สลิป">`
+    : '<div class="slip-img-ph">🖼️</div>';
+
+  const actionBtns = s.status === 'pending' ? `
+    <div class="slip-actions">
+      <button class="btn-approve" onclick="openApproveModal('${esc(s.slipId)}','${esc(s.customerName)}','${esc(s.policyNumber)}',${s.installmentNo},${s.amount})">✅ อนุมัติ</button>
+      <button class="btn-reject"  onclick="openRejectModal('${esc(s.slipId)}','${esc(s.customerName)}','${esc(s.policyNumber)}',${s.installmentNo})">❌ ปฏิเสธ</button>
+    </div>` : '';
+
+  const noteHtml = (s.adminNote && s.status !== 'pending')
+    ? `<div class="slip-note">💬 ${esc(s.adminNote)}${s.verifiedAt?' · '+esc(s.verifiedAt):''}</div>` : '';
+
+  return `<div class="slip-card ${s.status}">
+    <div class="slip-head">
+      <div class="slip-title">👤 ${esc(s.customerName)} — 📄 งวดที่ ${s.installmentNo}</div>
+      <div class="slip-time">${statusLabel}</div>
+    </div>
+    <div class="slip-body">
+      ${imgHtml}
+      <div class="slip-meta">
+        <div>🤝 ตัวแทน: <b>${esc(s.agentName)}</b></div>
+        <div>🚗 ทะเบียน: ${esc(s.licensePlate)}</div>
+        <div>📄 กรมธรรม์: ${esc(s.policyNumber)}</div>
+        <div>🕐 ส่งเมื่อ: ${esc(s.timestamp)}</div>
+        <div class="amount">฿${fmt(s.amount)}</div>
+      </div>
+    </div>
+    ${actionBtns}
+    ${noteHtml}
+  </div>`;
+}
+
+function openApproveModal(slipId, name, policy, inst, amount) {
+  activeSlipId = slipId;
+  document.getElementById('approve-info').innerHTML =
+    `ลูกค้า: <b>${esc(name)}</b> — กรมธรรม์ ${esc(policy)} งวดที่ ${inst}<br>ยอด: ฿${fmt(amount)}`;
+  document.getElementById('approve-note').value = '';
+  document.getElementById('modal-approve').style.display = 'flex';
+}
+
+async function confirmApproveSlip() {
+  const note = document.getElementById('approve-note').value.trim();
+  const data = encodeURIComponent(JSON.stringify({ slipId: activeSlipId, adminNote: note }));
+  const res  = await apiGet('approveSlip', { data });
+  if (res?.success) {
+    showToast('✅ อนุมัติสลิปแล้ว');
+    closeModal('modal-approve');
+    loadSlips();
+    loadData();
+  } else {
+    showToast('❌ ' + (res?.message || 'เกิดข้อผิดพลาด'));
+  }
+}
+
+function openRejectModal(slipId, name, policy, inst) {
+  activeSlipId = slipId;
+  document.getElementById('reject-info').innerHTML =
+    `ลูกค้า: <b>${esc(name)}</b> — กรมธรรม์ ${esc(policy)} งวดที่ ${inst}`;
+  document.getElementById('reject-reason').value = '';
+  document.getElementById('modal-reject').style.display = 'flex';
+}
+
+async function confirmRejectSlip() {
+  const reason = document.getElementById('reject-reason').value.trim();
+  if (!reason) { showToast('กรุณาระบุสาเหตุ'); return; }
+  const data = encodeURIComponent(JSON.stringify({ slipId: activeSlipId, reason }));
+  const res  = await apiGet('rejectSlip', { data });
+  if (res?.success) {
+    showToast('🚫 ปฏิเสธสลิปแล้ว');
+    closeModal('modal-reject');
+    loadSlips();
+  } else {
+    showToast('❌ ' + (res?.message || 'เกิดข้อผิดพลาด'));
+  }
+}
+
+// ══════════════════════════════════════════
+//  AGENTS
+// ══════════════════════════════════════════
+function renderAgents() {
+  if (!allAgents.length) {
+    document.getElementById('agent-list').innerHTML =
+      '<div class="empty-state"><div class="empty-icon">🤝</div>ยังไม่มีตัวแทน กดปุ่มด้านบนเพื่อเพิ่ม</div>';
+    return;
+  }
+  document.getElementById('agent-list').innerHTML = allAgents.map(a => `
+    <div class="agent-card">
+      <div class="agent-ic">🤝</div>
+      <div>
+        <div class="agent-name">${esc(a.name)}</div>
+        <div class="agent-sub">${a.phone?'📞 '+esc(a.phone)+' · ':''}ID: ${esc(a.agentId)}</div>
+      </div>
+      <span class="agent-status ${a.status==='active'?'as-active':'as-inactive'}">${a.status==='active'?'ใช้งาน':'ระงับ'}</span>
+    </div>`).join('');
+}
+
+function openCreateAgentModal() {
+  ['agent-name','agent-phone','agent-lineid','agent-token'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('modal-agent').style.display = 'flex';
+}
+
+async function confirmCreateAgent() {
+  const name   = document.getElementById('agent-name').value.trim();
+  const phone  = document.getElementById('agent-phone').value.trim();
+  const lineId = document.getElementById('agent-lineid').value.trim();
+  const token  = document.getElementById('agent-token').value.trim();
+  if (!name || !token) { showToast('กรุณากรอกชื่อและรหัสผ่าน'); return; }
+  const data = encodeURIComponent(JSON.stringify({ name, phone, lineId, token }));
+  const res  = await apiGet('createAgent', { data });
+  if (res?.success) {
+    showToast('✅ ' + (res.message || 'สร้างตัวแทนแล้ว'));
+    closeModal('modal-agent');
+    loadAgents();
+  } else {
+    showToast('❌ ' + (res?.message || 'เกิดข้อผิดพลาด'));
+  }
+}
+
+// ══════════════════════════════════════════
+//  IMAGE VIEWER
+// ══════════════════════════════════════════
+function viewImg(url) {
+  document.getElementById('img-viewer-src').src = url;
+  document.getElementById('img-viewer').classList.add('open');
 }
 
 // ══════════════════════════════════════════
