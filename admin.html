@@ -347,6 +347,28 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
   </div>
 </div>
 
+<!-- ════ MODAL: Assign Agent ════ -->
+<div class="modal-overlay" id="modal-assign" style="display:none">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">🤝 มอบหมายตัวแทน</div>
+      <button class="modal-close" onclick="closeModal('modal-assign')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-info" id="assign-info"></div>
+      <label class="modal-label">เลือกตัวแทน</label>
+      <select class="modal-input" id="assign-agent-select" style="font-family:inherit">
+        <option value="">-- เลือกตัวแทน --</option>
+      </select>
+      <div style="font-size:12px;color:#888;margin-top:-10px">จะเซ็ต AGENT_ID ทุกงวดของทะเบียนนี้ทันที</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal('modal-assign')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="confirmAssignAgent()">💾 มอบหมาย</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════ MODAL: Create Agent ════ -->
 <div class="modal-overlay" id="modal-agent" style="display:none">
   <div class="modal-box">
@@ -598,6 +620,7 @@ function cardHTML(c) {
       <button class="act-btn ${c.registered?'primary':''}" ${!c.registered?'disabled':''} onclick='openMsgModal(${keyAttr})'>
         💬 ส่งข้อความ
       </button>
+      <button class="act-btn" onclick='openAssignModal(${keyAttr})' title="มอบหมายตัวแทน">🤝 ตัวแทน</button>
     </div>
     <div class="detail-section">
       <div class="detail-title">งวดชำระ</div>
@@ -817,6 +840,54 @@ async function confirmCreateAgent() {
     loadAgents();
   } else {
     showToast('❌ ' + (res?.message || 'เกิดข้อผิดพลาด'));
+  }
+}
+
+// ══════════════════════════════════════════
+//  ASSIGN AGENT
+// ══════════════════════════════════════════
+let assignMeta = null;
+
+function openAssignModal(meta) {
+  assignMeta = meta;
+  document.getElementById('assign-info').innerHTML =
+    `ลูกค้า: <b>${esc(meta.name)}</b><br>ทะเบียน: ${esc((meta.plates||[]).join(', '))}`;
+
+  // สร้าง options จาก allAgents
+  const sel = document.getElementById('assign-agent-select');
+  sel.innerHTML = '<option value="">-- เลือกตัวแทน --</option>' +
+    allAgents.filter(a => a.status === 'active').map(a =>
+      `<option value="${esc(a.agentId)}">${esc(a.name)}${a.phone?' ('+esc(a.phone)+')':''}</option>`
+    ).join('');
+
+  document.getElementById('modal-assign').style.display = 'flex';
+
+  // โหลดตัวแทนถ้ายังไม่มี
+  if (!allAgents.length) loadAgents().then(() => {
+    sel.innerHTML = '<option value="">-- เลือกตัวแทน --</option>' +
+      allAgents.filter(a => a.status === 'active').map(a =>
+        `<option value="${esc(a.agentId)}">${esc(a.name)}</option>`
+      ).join('');
+  });
+}
+
+async function confirmAssignAgent() {
+  const agentId = document.getElementById('assign-agent-select').value;
+  if (!agentId) { showToast('กรุณาเลือกตัวแทน'); return; }
+  const plates = assignMeta?.plates || [];
+  if (!plates.length) { showToast('ไม่พบทะเบียนรถ'); return; }
+
+  let totalUpdated = 0;
+  for (const plate of plates) {
+    const data = encodeURIComponent(JSON.stringify({ plate, agentId }));
+    const res  = await apiGet('assignAgent', { data });
+    if (res?.success) totalUpdated += (res.updated || 1);
+    else showToast('❌ ' + (res?.message || plate+' ไม่สำเร็จ'));
+  }
+  if (totalUpdated > 0) {
+    showToast(`✅ มอบหมายแล้ว ${totalUpdated} แถว`);
+    closeModal('modal-assign');
+    loadData();
   }
 }
 
