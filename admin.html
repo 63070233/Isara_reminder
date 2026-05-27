@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>Admin — ISARA INTER BROKER</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#e65100;--orange-d:#bf360c;--orange-l:#fff3e0;
+  --red:#e53935;--red-l:#ffebee;
+  --green:#2e7d32;--green-l:#e8f5e9;
+  --blue:#1565c0;--blue-l:#e3f2fd;
+  --amber:#f57c00;--amber-l:#fff8e1;
+  --gray:#f5f5f5;--border:#e0e0e0;
+  --text:#212121;--sub:#757575;
+  --card:#fff;--radius:12px;
+}
+body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);color:var(--text);min-height:100vh}
+
+/* ── Login ── */
+#screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.login-box{background:var(--card);border-radius:16px;padding:36px 28px;width:100%;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,.12);text-align:center}
+.login-logo{font-size:48px;margin-bottom:12px}
+.login-title{font-size:20px;font-weight:800;color:var(--orange);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--sub);margin-bottom:24px}
+.login-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;margin-bottom:12px;outline:none;transition:border-color .2s}
+.login-input:focus{border-color:var(--orange)}
+.login-btn{width:100%;padding:13px;background:var(--orange);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;transition:background .2s}
+.login-btn:hover{background:var(--orange-d)}
+.login-err{color:var(--red);font-size:13px;margin-top:8px;min-height:20px}
+
+/* ── Top Bar ── */
+.topbar{background:var(--orange);color:#fff;display:flex;align-items:center;gap:10px;padding:12px 20px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.topbar-logo{font-size:20px}
+.topbar-title{font-size:15px;font-weight:800;flex:1}
+.topbar-actions{display:flex;gap:8px}
+.btn-sm{padding:6px 12px;border-radius:8px;border:none;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-white{background:#fff;color:var(--orange)}
+.btn-outline{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4)}
+
+/* ── Stats Bar ── */
+.stats-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:16px 16px 0}
+.stat-box{background:var(--card);border-radius:var(--radius);padding:12px 10px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.stat-val{font-size:24px;font-weight:800}
+.stat-lbl{font-size:11px;color:var(--sub);margin-top:2px}
+.c-red{color:var(--red)}.c-green{color:var(--green)}.c-orange{color:var(--orange)}.c-blue{color:var(--blue)}.c-amber{color:var(--amber)}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;gap:10px;padding:14px 16px;flex-wrap:wrap;align-items:center}
+.search-wrap{position:relative;flex:1;min-width:180px}
+.search-input{width:100%;padding:9px 12px 9px 34px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;transition:border-color .2s}
+.search-input:focus{border-color:var(--orange)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:16px}
+.filter-tabs{display:flex;gap:6px;flex-wrap:wrap}
+.ftab{padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;color:var(--sub);transition:all .15s}
+.ftab.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+
+/* ── Customer Grid ── */
+.cust-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;padding:0 16px 24px}
+.cust-card{background:var(--card);border-radius:var(--radius);box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;border-left:4px solid var(--border);transition:box-shadow .15s}
+.cust-card:hover{box-shadow:0 3px 12px rgba(0,0,0,.12)}
+.cust-card.overdue{border-left-color:var(--red)}
+.cust-card.upcoming{border-left-color:var(--amber)}
+.cust-card.ok{border-left-color:var(--green)}
+.cust-card.unreg{border-left-color:#bdbdbd}
+.card-head{display:flex;align-items:center;gap:10px;padding:12px 14px}
+.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.avatar-ph{width:42px;height:42px;border-radius:50%;background:var(--orange-l);color:var(--orange);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.card-name{font-size:14px;font-weight:700;flex:1;min-width:0}
+.card-plate{font-size:11px;color:var(--sub);margin-top:2px}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-red{background:var(--red)}.dot-amber{background:var(--amber)}.dot-green{background:var(--green)}.dot-gray{background:#bdbdbd}
+.card-body{padding:0 14px 12px}
+.progress-wrap{background:#f0f0f0;border-radius:99px;height:6px;margin-bottom:6px}
+.progress-bar{border-radius:99px;height:6px;background:var(--green);transition:width .4s}
+.progress-bar.red{background:var(--red)}
+.card-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-bottom:8px}
+.due-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px}
+.badge-red{background:var(--red-l);color:var(--red)}
+.badge-amber{background:var(--amber-l);color:var(--amber)}
+.badge-green{background:var(--green-l);color:var(--green)}
+.badge-gray{background:#f5f5f5;color:#9e9e9e}
+.card-actions{display:flex;gap:6px;padding:0 14px 12px}
+.act-btn{flex:1;padding:7px 4px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;color:var(--text);transition:all .15s;text-align:center}
+.act-btn:hover{background:var(--gray)}
+.act-btn.primary{background:var(--orange);color:#fff;border-color:var(--orange)}
+.act-btn.primary:hover{background:var(--orange-d)}
+.act-btn:disabled{opacity:.4;cursor:not-allowed}
+.detail-section{padding:0 14px 12px;border-top:1px solid var(--border);margin-top:4px}
+.detail-title{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px}
+.inst-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f5f5f5;font-size:12px}
+.inst-item:last-child{border-bottom:none}
+.inst-no{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+.no-paid{background:#e8f5e9;color:var(--green)}.no-overdue{background:#ffebee;color:var(--red)}.no-soon{background:#fff8e1;color:var(--amber)}.no-norm{background:#e3f2fd;color:var(--blue)}
+.inst-info{flex:1}
+.inst-amount{font-weight:700;white-space:nowrap}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:var(--card);border-radius:16px;width:100%;max-width:400px;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.modal-head{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:700;flex:1}
+.modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--sub);padding:4px}
+.modal-body{padding:20px}
+.modal-label{font-size:13px;font-weight:600;margin-bottom:6px;display:block}
+.modal-input{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;margin-bottom:14px;transition:border-color .2s}
+.modal-input:focus{border-color:var(--orange)}
+.modal-textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;outline:none;resize:vertical;min-height:100px;margin-bottom:14px;transition:border-color .2s;font-family:inherit}
+.modal-textarea:focus{border-color:var(--orange)}
+.modal-foot{display:flex;gap:8px;padding:0 20px 20px}
+.btn-cancel{flex:1;padding:11px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);font-size:14px;font-weight:600;cursor:pointer}
+.btn-confirm{flex:1;padding:11px;border-radius:8px;border:none;background:var(--orange);color:#fff;font-size:14px;font-weight:700;cursor:pointer}
+.btn-confirm:hover{background:var(--orange-d)}
+.modal-info{background:var(--orange-l);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--orange);margin-bottom:14px;line-height:1.5}
+
+/* ── Empty/Loading ── */
+.empty-state{text-align:center;padding:60px 20px;color:var(--sub)}
+.empty-icon{font-size:48px;margin-bottom:12px}
+.spinner-wrap{display:flex;align-items:center;justify-content:center;padding:60px}
+.spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--orange);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#212121;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+.screen{display:none}.screen.active{display:block}
+#screen-login{display:flex}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN ════ -->
+<div id="screen-login">
+  <div class="login-box">
+    <div class="login-logo">🛡️</div>
+    <div class="login-title">ISARA Admin</div>
+    <div class="login-sub">ระบบจัดการผ่อนชำระ</div>
+    <input id="inp-gasurl" class="login-input" type="url" placeholder="GAS Web App URL" autocomplete="off"/>
+    <input id="inp-token" class="login-input" type="password" placeholder="Admin Password" autocomplete="off"
+           onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">🔐 เข้าสู่ระบบ</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ════ DASHBOARD ════ -->
+<div id="screen-dash" class="screen">
+
+  <div class="topbar">
+    <div class="topbar-logo">🛡️</div>
+    <div class="topbar-title">ISARA Admin Dashboard</div>
+    <div class="topbar-actions">
+      <button class="btn-sm btn-white" onclick="loadData()">🔄 รีเฟรช</button>
+      <button class="btn-sm btn-outline" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="stats-bar"></div>
+
+  <div class="toolbar">
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-input" id="search-input" type="text"
+             placeholder="ค้นหาชื่อ, ทะเบียน, กรมธรรม์..."
+             oninput="renderCards()"/>
+    </div>
+    <div class="filter-tabs">
+      <button class="ftab active" data-filter="all"       onclick="setFilter('all',this)">ทั้งหมด</button>
+      <button class="ftab"        data-filter="overdue"   onclick="setFilter('overdue',this)">⚠️ ค้างชำระ</button>
+      <button class="ftab"        data-filter="upcoming"  onclick="setFilter('upcoming',this)">🔔 ใกล้ถึง</button>
+      <button class="ftab"        data-filter="unreg"     onclick="setFilter('unreg',this)">❌ ไม่มี LINE</button>
+      <button class="ftab"        data-filter="ok"        onclick="setFilter('ok',this)">✅ ปกติ</button>
+    </div>
+  </div>
+
+  <div id="card-area" class="cust-grid"></div>
+</div>
+
+<!-- ════ MODAL: แก้ LINE ID ════ -->
+<div class="modal-overlay" id="modal-userid" style="display:none">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">✏️ แก้ไข LINE User ID</div>
+      <button class="modal-close" onclick="closeModal('modal-userid')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-info" id="userid-info"></div>
+      <label class="modal-label">ทะเบียนรถ</label>
+      <input class="modal-input" id="userid-plate" readonly style="background:#f5f5f5"/>
+      <label class="modal-label">LINE User ID (ขึ้นต้นด้วย U...)</label>
+      <input class="modal-input" id="userid-value" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"/>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal('modal-userid')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="submitSetUserId()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: ส่งข้อความ ════ -->
+<div class="modal-overlay" id="modal-msg" style="display:none">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-title">💬 ส่งข้อความ LINE</div>
+      <button class="modal-close" onclick="closeModal('modal-msg')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-info" id="msg-info"></div>
+      <label class="modal-label">ข้อความ</label>
+      <textarea class="modal-textarea" id="msg-text" placeholder="พิมพ์ข้อความที่ต้องการส่ง..."></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="act-btn" onclick="setMsgTemplate('แจ้งเตือน: กรุณาชำระค่างวดที่ค้างอยู่ กรุณาติดต่อ ISARA INTER BROKER โทร 0954579045')">📋 แจ้งค้างชำระ</button>
+        <button class="act-btn" onclick="setMsgTemplate('กรมธรรม์ของท่านใกล้หมดอายุ กรุณาติดต่อต่ออายุที่ ISARA INTER BROKER โทร 0954579045')">🔔 ต่ออายุ</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal('modal-msg')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="submitSendMsg()">📤 ส่ง</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+let GAS_URL = localStorage.getItem('isara_gas_url') || '';
+let TOKEN   = localStorage.getItem('isara_token')   || '';
+let allData = [];
+let currentFilter = 'all';
+let activeModal = { plate:'', userId:'' };
+
+// ── Auto-login if saved ─────────────────
+window.addEventListener('load', () => {
+  if (GAS_URL && TOKEN) {
+    document.getElementById('inp-gasurl').value = GAS_URL;
+    document.getElementById('inp-token').value  = TOKEN;
+    loadData();
+  }
+});
+
+// ══════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════
+async function doLogin() {
+  const url   = document.getElementById('inp-gasurl').value.trim();
+  const token = document.getElementById('inp-token').value.trim();
+  const err   = document.getElementById('login-err');
+  if (!url || !token) { err.textContent = 'กรุณากรอกข้อมูลให้ครบ'; return; }
+
+  err.textContent = '⏳ กำลังเชื่อมต่อ...';
+  GAS_URL = url; TOKEN = token;
+  const res = await apiGet('adminData');
+  if (!res || !res.success) {
+    err.textContent = res ? ('❌ ' + res.message) : '❌ เชื่อมต่อไม่ได้';
+    return;
+  }
+  localStorage.setItem('isara_gas_url', url);
+  localStorage.setItem('isara_token', token);
+  err.textContent = '';
+  allData = res.customers || [];
+  renderStats(res.stats || {});
+  renderCards();
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('screen-dash').classList.add('active');
+}
+
+function doLogout() {
+  localStorage.removeItem('isara_token');
+  TOKEN = '';
+  document.getElementById('screen-dash').classList.remove('active');
+  document.getElementById('screen-login').style.display = 'flex';
+}
+
+// ══════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════
+async function loadData() {
+  document.getElementById('card-area').innerHTML =
+    '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  const res = await apiGet('adminData');
+  if (!res || !res.success) { showToast('โหลดข้อมูลไม่สำเร็จ'); return; }
+  allData = res.customers || [];
+  renderStats(res.stats || {});
+  renderCards();
+}
+
+async function apiGet(action, params={}) {
+  try {
+    const qs = Object.entries({ action, token: TOKEN, ...params })
+      .map(([k,v]) => k+'='+encodeURIComponent(v)).join('&');
+    const r = await fetch(GAS_URL + '?' + qs, { redirect:'follow' });
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+// ══════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════
+function renderStats(s) {
+  document.getElementById('stats-bar').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${s.total||0}</div><div class="stat-lbl">ลูกค้าทั้งหมด</div></div>
+    <div class="stat-box"><div class="stat-val c-red">${s.overdue||0}</div><div class="stat-lbl">ค้างชำระ</div></div>
+    <div class="stat-box"><div class="stat-val c-amber">${s.upcoming7||0}</div><div class="stat-lbl">ครบใน 7 วัน</div></div>
+    <div class="stat-box"><div class="stat-val c-orange">${s.unregistered||0}</div><div class="stat-lbl">ไม่มี LINE</div></div>
+    <div class="stat-box"><div class="stat-val c-green">${s.registered||0}</div><div class="stat-lbl">ลงทะเบียนแล้ว</div></div>
+    <div class="stat-box"><div class="stat-val c-red" style="font-size:16px">฿${fmt(s.totalDue||0)}</div><div class="stat-lbl">ยอดค้างรวม</div></div>`;
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.ftab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderCards();
+}
+
+function renderCards() {
+  const q   = (document.getElementById('search-input').value || '').toLowerCase();
+  const el  = document.getElementById('card-area');
+
+  let list = allData.filter(c => {
+    if (q) {
+      const hay = [c.name, ...(c.plates||[]), ...(c.policies||[]), c.userId||''].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    if (currentFilter === 'overdue')  return c.summary.overdueCount > 0;
+    if (currentFilter === 'upcoming') return c.summary.nextDue && c.summary.nextDue.daysLeft >= 0 && c.summary.nextDue.daysLeft <= 7 && c.summary.overdueCount === 0;
+    if (currentFilter === 'unreg')    return !c.registered;
+    if (currentFilter === 'ok')       return c.registered && c.summary.overdueCount === 0 && c.summary.pendingCount > 0;
+    return true;
+  });
+
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><div>ไม่พบข้อมูลที่ตรงกัน</div></div>';
+    return;
+  }
+
+  el.innerHTML = list.map(c => cardHTML(c)).join('');
+}
+
+function cardHTML(c) {
+  const s   = c.summary;
+  const pct = s.total > 0 ? Math.round(s.paidCount / s.total * 100) : 0;
+  const pic = c.profile?.pictureUrl || '';
+  const name = c.profile?.displayName || c.name || '—';
+  const plates = (c.plates||[]).join(', ') || '—';
+
+  // card accent
+  let cardCls = 'cust-card ';
+  let dotCls  = 'status-dot ';
+  if (!c.registered) { cardCls += 'unreg'; dotCls += 'dot-gray'; }
+  else if (s.overdueCount > 0) { cardCls += 'overdue'; dotCls += 'dot-red'; }
+  else if (s.nextDue && s.nextDue.daysLeft <= 7) { cardCls += 'upcoming'; dotCls += 'dot-amber'; }
+  else { cardCls += 'ok'; dotCls += 'dot-green'; }
+
+  // due badge
+  let dueBadge = '';
+  if (!c.registered) dueBadge = '<span class="due-badge badge-gray">ไม่มี LINE</span>';
+  else if (s.overdueCount > 0) dueBadge = `<span class="due-badge badge-red">เกิน ${s.overdueCount} งวด</span>`;
+  else if (s.nextDue) {
+    const d = s.nextDue.daysLeft;
+    dueBadge = d <= 7
+      ? `<span class="due-badge badge-amber">อีก ${d} วัน</span>`
+      : `<span class="due-badge badge-green">อีก ${d} วัน</span>`;
+  } else if (s.pendingCount === 0) dueBadge = '<span class="due-badge badge-green">ชำระครบแล้ว</span>';
+
+  // installment rows (max 5)
+  const insts = (c.installments||[]).sort((a,b) => a.installmentNo - b.installmentNo).slice(0,5);
+  const instRows = insts.map(inst => {
+    let noCls = 'no-norm';
+    if (inst.status === 'ชำระแล้ว') noCls = 'no-paid';
+    else if (inst.overdue) noCls = 'no-overdue';
+    else if (inst.daysLeft !== null && inst.daysLeft <= 7) noCls = 'no-soon';
+    return `<div class="inst-item">
+      <div class="inst-no ${noCls}">${inst.installmentNo}</div>
+      <div class="inst-info">
+        <div style="font-weight:600">${esc(inst.policyNumber)} · ${esc(inst.licensePlate)}</div>
+        <div style="color:#9e9e9e">${inst.status === 'ชำระแล้ว' ? 'ชำระ '+esc(inst.paidDate) : 'ครบ '+esc(inst.dueDate)}</div>
+      </div>
+      <div class="inst-amount ${inst.overdue?'c-red':inst.status==='ชำระแล้ว'?'c-green':''}">฿${fmt(inst.amount)}</div>
+    </div>`;
+  }).join('');
+  const moreNote = c.installments.length > 5 ? `<div style="font-size:11px;color:var(--sub);text-align:center;padding:4px">+ อีก ${c.installments.length-5} รายการ</div>` : '';
+
+  const phone = c.profile?.phone ? `📞 ${esc(c.profile.phone)}` : '';
+
+  // encode key for onclick
+  const keyAttr = esc(JSON.stringify({ plates:c.plates, userId:c.userId||'', name }));
+
+  return `<div class="${cardCls}">
+    <div class="card-head">
+      ${pic ? `<img class="avatar" src="${esc(pic)}" onerror="this.style.display='none'"/>` : `<div class="avatar-ph">👤</div>`}
+      <div style="flex:1;min-width:0">
+        <div class="card-name">${esc(name)}</div>
+        <div class="card-plate">🚗 ${esc(plates)}${phone?' · '+phone:''}</div>
+      </div>
+      <div class="${dotCls}"></div>
+    </div>
+    <div class="card-body">
+      <div class="progress-wrap">
+        <div class="progress-bar ${s.overdueCount>0?'red':''}" style="width:${pct}%"></div>
+      </div>
+      <div class="card-meta">
+        <span>ชำระแล้ว ${s.paidCount}/${s.total} งวด</span>
+        <span ${s.totalDue>0?'style="color:var(--red);font-weight:700"':''}>
+          ${s.totalDue>0?'ค้าง ฿'+fmt(s.totalDue):'ครบแล้ว'}
+        </span>
+      </div>
+      ${dueBadge}
+    </div>
+    <div class="card-actions">
+      <button class="act-btn" onclick='openUserIdModal(${keyAttr})'>✏️ LINE ID</button>
+      <button class="act-btn ${c.registered?'primary':''}" ${!c.registered?'disabled':''} onclick='openMsgModal(${keyAttr})'>
+        💬 ส่งข้อความ
+      </button>
+    </div>
+    <div class="detail-section">
+      <div class="detail-title">งวดชำระ</div>
+      ${instRows}${moreNote}
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════
+function openUserIdModal(meta) {
+  activeModal = meta;
+  const plate = (meta.plates||[])[0] || '';
+  document.getElementById('userid-plate').value = plate;
+  document.getElementById('userid-value').value = meta.userId || '';
+  document.getElementById('userid-info').textContent =
+    'ลูกค้า: ' + meta.name + (meta.plates?.length ? ' · ทะเบียน: ' + meta.plates.join(', ') : '');
+  document.getElementById('modal-userid').style.display = 'flex';
+}
+
+async function submitSetUserId() {
+  const plate  = document.getElementById('userid-plate').value.trim();
+  const userId = document.getElementById('userid-value').value.trim();
+  if (!plate || !userId) { showToast('กรุณากรอกข้อมูลให้ครบ'); return; }
+  const data = encodeURIComponent(JSON.stringify({ plate, userId }));
+  const res  = await apiGet('setUserId', { data });
+  if (res?.success) {
+    showToast('✅ ' + (res.message || 'บันทึกแล้ว'));
+    closeModal('modal-userid');
+    loadData();
+  } else {
+    showToast('❌ ' + (res?.message || 'เกิดข้อผิดพลาด'));
+  }
+}
+
+function openMsgModal(meta) {
+  activeModal = meta;
+  document.getElementById('msg-info').textContent =
+    'ส่งถึง: ' + meta.name + ' · LINE ID: ' + (meta.userId || '—');
+  document.getElementById('msg-text').value = '';
+  document.getElementById('modal-msg').style.display = 'flex';
+}
+
+function setMsgTemplate(txt) {
+  document.getElementById('msg-text').value = txt;
+}
+
+async function submitSendMsg() {
+  const msg    = document.getElementById('msg-text').value.trim();
+  const userId = activeModal.userId;
+  if (!msg)    { showToast('กรุณาพิมพ์ข้อความ'); return; }
+  if (!userId) { showToast('ไม่มี LINE User ID'); return; }
+  const data = encodeURIComponent(JSON.stringify({ userId, message: msg }));
+  const res  = await apiGet('sendMsg', { data });
+  if (res?.success) {
+    showToast('✅ ส่งข้อความแล้ว');
+    closeModal('modal-msg');
+  } else {
+    showToast('❌ ' + (res?.message || 'ส่งไม่สำเร็จ'));
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function fmt(n) { return Number(n||0).toLocaleString('th-TH'); }
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
