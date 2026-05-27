@@ -720,10 +720,21 @@ function renderSlips() {
   document.getElementById('slip-list').innerHTML = list.map(slipCardHTML).join('');
 }
 
+// แปลง Drive URL เก่า (uc?export=view) → thumbnail URL ที่ embed ได้
+function driveThumbUrl(url) {
+  if (!url) return '';
+  if (url.includes('thumbnail')) return url; // already thumbnail
+  var match = url.match(/[?&]id=([^&]+)/) || url.match(/\/d\/([^/?]+)/);
+  if (match) return 'https://drive.google.com/thumbnail?id=' + match[1] + '&sz=w800';
+  return url;
+}
+
 function slipCardHTML(s) {
   const statusLabel = s.status==='approved' ? '✅ อนุมัติแล้ว' : s.status==='rejected' ? '❌ ปฏิเสธ' : '⏳ รอตรวจสอบ';
-  const imgHtml = s.imageUrl
-    ? `<img class="slip-img" src="${esc(s.imageUrl)}" onclick="viewImg('${esc(s.imageUrl)}')" alt="สลิป">`
+  const thumbUrl = driveThumbUrl(s.imageUrl);
+  const imgHtml = thumbUrl
+    ? `<img class="slip-img" src="${esc(thumbUrl)}" onclick="viewImg('${esc(thumbUrl)}')" alt="สลิป"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="slip-img-ph" style="display:none">🖼️</div>`
     : '<div class="slip-img-ph">🖼️</div>';
 
   const actionBtns = s.status === 'pending' ? `
@@ -895,7 +906,7 @@ async function confirmAssignAgent() {
 //  IMAGE VIEWER
 // ══════════════════════════════════════════
 function viewImg(url) {
-  document.getElementById('img-viewer-src').src = url;
+  document.getElementById('img-viewer-src').src = driveThumbUrl(url);
   document.getElementById('img-viewer').classList.add('open');
 }
 
