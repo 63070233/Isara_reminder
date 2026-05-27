@@ -376,10 +376,12 @@ function custCard(c) {
   else
     picHtml = '👤';
 
-  var instRows = c.installments.slice(0,6).map(function(inst) {
-    var sCls = inst.status === 'ชำระแล้ว' ? 's-paid' : inst.overdue ? 's-overdue' : inst.status === 'รอยืนยัน' ? 's-pending' : 's-wait';
+  // แสดงเฉพาะงวดที่ยังไม่ชำระ (ตัวแทนต้องเห็นทุกงวดที่ค้างเพื่อส่งสลิป)
+  var pendingInsts = c.installments.filter(function(x){ return x.status !== 'ชำระแล้ว'; });
+  var instRows = pendingInsts.map(function(inst) {
+    var sCls = inst.overdue ? 's-overdue' : inst.status === 'รอยืนยัน' ? 's-pending' : 's-wait';
     var sLbl = inst.status;
-    var canSubmit = inst.status !== 'ชำระแล้ว' && inst.status !== 'รอยืนยัน';
+    var canSubmit = inst.status !== 'รอยืนยัน';
     return '<div class="inst-row">'+
       '<div class="inst-info"><div class="inst-no">งวดที่ '+inst.installmentNo+'/'+inst.totalInstallments+' • '+inst.policyNumber+'</div>'+
       '<div class="inst-due">📅 '+inst.dueDate+'</div></div>'+
