@@ -571,23 +571,37 @@ function cardHTML(c) {
       : `<span class="due-badge badge-green">อีก ${d} วัน</span>`;
   } else if (s.pendingCount === 0) dueBadge = '<span class="due-badge badge-green">ชำระครบแล้ว</span>';
 
-  // installment rows (max 5)
-  const insts = (c.installments||[]).sort((a,b) => a.installmentNo - b.installmentNo).slice(0,5);
+  // installment rows — แสดงเฉพาะงวดที่ยังไม่ชำระ, 1 งวดต่อ 1 กรมธรรม์ (งวดถัดไปที่ต้องจ่าย)
+  const pendingAll = (c.installments||[])
+    .filter(x => x.status !== 'ชำระแล้ว')
+    .sort((a,b) => a.installmentNo - b.installmentNo);
+
+  // dedup: เก็บแค่งวดแรกสุดของแต่ละกรมธรรม์
+  const seenPol = new Set();
+  const insts = pendingAll.filter(inst => {
+    const polKey = inst.policyNumber || inst.licensePlate || String(inst.installmentNo);
+    if (seenPol.has(polKey)) return false;
+    seenPol.add(polKey);
+    return true;
+  }).slice(0, 5);
+
   const instRows = insts.map(inst => {
-    let noCls = 'no-norm';
-    if (inst.status === 'ชำระแล้ว') noCls = 'no-paid';
-    else if (inst.overdue) noCls = 'no-overdue';
-    else if (inst.daysLeft !== null && inst.daysLeft <= 7) noCls = 'no-soon';
+    let noCls = inst.overdue ? 'no-overdue' : (inst.daysLeft !== null && inst.daysLeft <= 7) ? 'no-soon' : 'no-norm';
     return `<div class="inst-item">
       <div class="inst-no ${noCls}">${inst.installmentNo}</div>
       <div class="inst-info">
         <div style="font-weight:600">${esc(inst.policyNumber)} · ${esc(inst.licensePlate)}</div>
-        <div style="color:#9e9e9e">${inst.status === 'ชำระแล้ว' ? 'ชำระ '+esc(inst.paidDate) : 'ครบ '+esc(inst.dueDate)}</div>
+        <div style="color:#9e9e9e">ครบ ${esc(inst.dueDate)}</div>
       </div>
-      <div class="inst-amount ${inst.overdue?'c-red':inst.status==='ชำระแล้ว'?'c-green':''}">฿${fmt(inst.amount)}</div>
+      <div class="inst-amount ${inst.overdue?'c-red':''}">฿${fmt(inst.amount)}</div>
     </div>`;
   }).join('');
-  const moreNote = c.installments.length > 5 ? `<div style="font-size:11px;color:var(--sub);text-align:center;padding:4px">+ อีก ${c.installments.length-5} รายการ</div>` : '';
+
+  const totalPending = pendingAll.length;
+  const hiddenCount  = seenPol.size > 5 ? seenPol.size - 5 : 0;
+  const moreNote = hiddenCount > 0
+    ? `<div style="font-size:11px;color:var(--sub);text-align:center;padding:4px">+ อีก ${hiddenCount} กรมธรรม์</div>`
+    : (totalPending === 0 ? '<div style="font-size:12px;color:#66bb6a;text-align:center;padding:6px">✅ ชำระครบทุกงวดแล้ว</div>' : '');
 
   const phone = c.profile?.phone ? `📞 ${esc(c.profile.phone)}` : '';
 
