@@ -127,6 +127,28 @@
     font-size:15px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif}
   .btn-submit:disabled{background:#90caf9}
 
+  /* ── FAB ── */
+  .fab{position:fixed;bottom:24px;right:20px;width:54px;height:54px;border-radius:50%;
+    background:#1565c0;color:#fff;font-size:28px;border:none;box-shadow:0 4px 16px rgba(21,101,192,.4);
+    cursor:pointer;z-index:200;display:flex;align-items:center;justify-content:center;
+    font-family:'Sarabun',sans-serif;transition:.2s}
+  .fab:hover{background:#0d47a1;transform:scale(1.08)}
+
+  /* ── type toggle ── */
+  .type-btn{flex:1;padding:10px;border:2px solid #ddd;border-radius:10px;
+    font-size:14px;cursor:pointer;background:#f5f5f5;font-family:'Sarabun',sans-serif;transition:.2s}
+  .type-btn.active{background:#1565c0;color:#fff;border-color:#1565c0;font-weight:700}
+
+  /* ── edit btn on card ── */
+  .btn-edit-cust{background:#fff;border:1.5px solid #1565c0;color:#1565c0;border-radius:8px;
+    font-size:12px;padding:5px 10px;cursor:pointer;font-family:'Sarabun',sans-serif;white-space:nowrap}
+  .btn-edit-cust:hover{background:#e3f2fd}
+
+  /* ── doc link ── */
+  .doc-link{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:#1565c0;
+    text-decoration:none;background:#e3f2fd;padding:4px 10px;border-radius:8px;margin-top:4px}
+  .doc-link:hover{background:#bbdefb}
+
   .upload-area{border:2px dashed #90caf9;border-radius:12px;padding:20px;text-align:center;
     cursor:pointer;background:#f8fbff;margin-top:8px;transition:.2s}
   .upload-area:hover{background:#e3f2fd;border-color:#1565c0}
@@ -185,6 +207,8 @@
       <input type="text" id="searchBox" placeholder="ค้นหาชื่อ, ทะเบียน..." oninput="renderCustomers()">
     </div>
     <div id="custList"><div class="spinner">⏳ กำลังโหลด...</div></div>
+  <!-- FAB เพิ่มลูกค้า -->
+  <button class="fab" onclick="openAddModal()" title="เพิ่มลูกค้าใหม่">＋</button>
   </div>
 
   <!-- ── สลิป ── -->
@@ -215,6 +239,98 @@
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeSlipModal()">ยกเลิก</button>
       <button class="btn-submit" id="btnSubmitSlip" onclick="submitSlip()">📤 ส่งสลิป</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD CUSTOMER MODAL ════════════════════════════════════════ -->
+<div class="modal-bg" id="addModal">
+  <div class="modal" style="max-height:90vh;overflow-y:auto;max-width:480px">
+    <h3>➕ เพิ่มลูกค้าใหม่</h3>
+
+    <!-- Type toggle -->
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button class="type-btn active" id="typeBtnInst" onclick="switchCustType('installment')">📅 ผ่อนชำระ</button>
+      <button class="type-btn" id="typeBtnFull" onclick="switchCustType('fullpay')">✅ จ่ายเต็ม</button>
+    </div>
+
+    <!-- Common fields -->
+    <label>ชื่อผู้เอาประกัน <span style="color:#c62828">*</span></label>
+    <input type="text" id="add-name" placeholder="ชื่อ-นามสกุล">
+
+    <label>เลขกรมธรรม์ <span style="color:#c62828">*</span></label>
+    <input type="text" id="add-policy" placeholder="เช่น HQ-AV1-0025392-00000-2026-01">
+
+    <label>ทะเบียนรถ</label>
+    <input type="text" id="add-plate" placeholder="เช่น กล5833">
+
+    <label>เบอร์โทร</label>
+    <input type="tel" id="add-phone" placeholder="0812345678">
+
+    <label>LINE User ID <span style="font-size:11px;color:#999">(ถ้ามี)</span></label>
+    <input type="text" id="add-lineid" placeholder="Uxxxxxxxxxxxxxxxx">
+
+    <label>URL กรมธรรม์ <span style="font-size:11px;color:#999">(Google Drive link)</span></label>
+    <input type="url" id="add-docurl" placeholder="https://drive.google.com/file/d/...">
+
+    <!-- Installment fields -->
+    <div id="inst-fields">
+      <label>ยอดต่องวด (บาท) <span style="color:#c62828">*</span></label>
+      <input type="number" id="add-amount" placeholder="0" oninput="previewInstallments()">
+
+      <label>จำนวนงวด <span style="color:#c62828">*</span></label>
+      <input type="number" id="add-count" placeholder="12" min="1" max="60" oninput="previewInstallments()">
+
+      <label>วันครบงวดแรก <span style="color:#c62828">*</span></label>
+      <input type="date" id="add-firstdue" onchange="previewInstallments()">
+
+      <div id="inst-preview" style="background:#f0f4ff;border-radius:10px;padding:10px;font-size:12px;margin-top:6px;display:none">
+        <div style="font-weight:700;margin-bottom:6px;color:#1565c0">📋 Preview งวดที่จะสร้าง</div>
+        <div id="inst-preview-list"></div>
+      </div>
+    </div>
+
+    <!-- Full-pay fields -->
+    <div id="full-fields" style="display:none">
+      <label>ยอดเบี้ยทั้งหมด (บาท) <span style="color:#c62828">*</span></label>
+      <input type="number" id="add-total" placeholder="0">
+
+      <label>วันที่ชำระ <span style="color:#c62828">*</span></label>
+      <input type="date" id="add-paiddate">
+
+      <label>วันหมดอายุกรมธรรม์ <span style="color:#c62828">*</span></label>
+      <input type="date" id="add-expiry">
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeAddModal()">ยกเลิก</button>
+      <button class="btn-submit" id="btnAddCustomer" onclick="submitAddCustomer()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EDIT CUSTOMER MODAL ════════════════════════════════════════ -->
+<div class="modal-bg" id="editModal">
+  <div class="modal" style="max-width:420px">
+    <h3>✏️ แก้ไขข้อมูลลูกค้า</h3>
+    <input type="hidden" id="edit-policy">
+
+    <label>ชื่อผู้เอาประกัน</label>
+    <input type="text" id="edit-name" placeholder="ชื่อ-นามสกุล">
+
+    <label>ทะเบียนรถ</label>
+    <input type="text" id="edit-plate" placeholder="กล5833">
+
+    <label>LINE User ID</label>
+    <input type="text" id="edit-lineid" placeholder="Uxxxxxxxxxxxxxxxx">
+
+    <label>URL กรมธรรม์ (Google Drive)</label>
+    <input type="url" id="edit-docurl" placeholder="https://drive.google.com/file/d/...">
+    <div style="font-size:11px;color:#999;margin-top:2px">วาง link จาก Drive → Share → Copy link</div>
+
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="btn-cancel" onclick="closeEditModal()">ยกเลิก</button>
+      <button class="btn-submit" onclick="submitEditCustomer()">💾 บันทึก</button>
     </div>
   </div>
 </div>
@@ -397,12 +513,30 @@ function custCard(c) {
       '</div>';
   }).join('');
 
+  // docUrl จากงวดแรกสุดที่มี
+  var docUrl = '';
+  for (var di = 0; di < c.installments.length; di++) {
+    if (c.installments[di].docUrl) { docUrl = c.installments[di].docUrl; break; }
+  }
+  var docBtn = docUrl ? '<a class="doc-link" href="'+docUrl+'" target="_blank">📄 ดูกรมธรรม์</a>' : '';
+
+  // ข้อมูลสำหรับ edit modal
+  var editData = JSON.stringify({
+    policyNumber: c.policies[0]||'',
+    customerName: c.name,
+    licensePlate: c.plates[0]||'',
+    lineUserId:   c.userId||'',
+    docUrl:       docUrl,
+  }).replace(/'/g,"&#39;");
+
   return '<div class="cust-card">'+
     '<div class="cust-head">'+
       '<div class="cust-pic">'+picHtml+'</div>'+
       '<div><div class="cust-name">'+c.name+'</div>'+
-      '<div class="cust-sub">🚗 '+c.plates.join(', ')+(c.profile&&c.profile.phone?' • 📞'+c.profile.phone:'')+'</div></div>'+
-      '<span class="cust-badge '+badgeCls+'">'+badgeLbl+'</span>'+
+      '<div class="cust-sub">🚗 '+c.plates.join(', ')+(c.profile&&c.profile.phone?' • 📞'+c.profile.phone:'')+'</div>'+
+      docBtn+
+      '</div>'+
+      '<button class="btn-edit-cust" onclick=\'openEditModal('+editData+')\'>✏️ แก้ไข</button>'+
     '</div>'+
     '<div class="progress-wrap">'+
       '<div class="progress-lbl"><span>ชำระแล้ว '+s.paidCount+'/'+s.total+' งวด</span>'+
@@ -538,6 +672,141 @@ function switchTab(name) {
 function viewImage(url) {
   document.getElementById('imgViewerSrc').src = url;
   document.getElementById('imgViewer').classList.add('open');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ADD CUSTOMER
+// ══════════════════════════════════════════════════════════════
+var currentCustType = 'installment';
+
+function openAddModal() {
+  currentCustType = 'installment';
+  document.getElementById('addModal').classList.add('open');
+  // reset form
+  ['add-name','add-policy','add-plate','add-phone','add-lineid','add-docurl',
+   'add-amount','add-count','add-firstdue','add-total','add-paiddate','add-expiry'].forEach(function(id){
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('inst-preview').style.display = 'none';
+  switchCustType('installment');
+}
+function closeAddModal() { document.getElementById('addModal').classList.remove('open'); }
+
+function switchCustType(t) {
+  currentCustType = t;
+  document.getElementById('typeBtnInst').classList.toggle('active', t==='installment');
+  document.getElementById('typeBtnFull').classList.toggle('active', t==='fullpay');
+  document.getElementById('inst-fields').style.display  = t==='installment' ? '' : 'none';
+  document.getElementById('full-fields').style.display  = t==='fullpay'     ? '' : 'none';
+}
+
+function previewInstallments() {
+  var count    = parseInt(document.getElementById('add-count').value) || 0;
+  var amount   = parseFloat(document.getElementById('add-amount').value) || 0;
+  var firstDue = document.getElementById('add-firstdue').value; // YYYY-MM-DD
+  var prev     = document.getElementById('inst-preview');
+  if (!count || !firstDue) { prev.style.display='none'; return; }
+  prev.style.display = '';
+  var d = new Date(firstDue);
+  var html = '';
+  var show = Math.min(count, 6);
+  for (var i = 0; i < show; i++) {
+    var dd = new Date(d); dd.setMonth(dd.getMonth()+i);
+    html += '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid #e0e0e0">'+
+      '<span>งวดที่ '+(i+1)+'/'+count+'  '+dd.toLocaleDateString('th-TH')+'</span>'+
+      '<span style="font-weight:700">฿'+amount.toLocaleString('th-TH')+'</span></div>';
+  }
+  if (count > 6) html += '<div style="color:#999;font-size:11px;margin-top:4px">...และอีก '+(count-6)+' งวด</div>';
+  document.getElementById('inst-preview-list').innerHTML = html;
+}
+
+function submitAddCustomer() {
+  var btn = document.getElementById('btnAddCustomer');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+
+  var payload = {
+    type:         currentCustType,
+    customerName: document.getElementById('add-name').value.trim(),
+    policyNumber: document.getElementById('add-policy').value.trim(),
+    licensePlate: document.getElementById('add-plate').value.trim(),
+    lineUserId:   document.getElementById('add-lineid').value.trim(),
+    docUrl:       document.getElementById('add-docurl').value.trim(),
+  };
+
+  if (currentCustType === 'installment') {
+    payload.amount           = parseFloat(document.getElementById('add-amount').value)  || 0;
+    payload.installmentCount = parseInt(document.getElementById('add-count').value)     || 0;
+    // แปลง YYYY-MM-DD → dd/MM/yyyy
+    var fd = document.getElementById('add-firstdue').value;
+    if (fd) { var p=fd.split('-'); payload.firstDueDate = p[2]+'/'+p[1]+'/'+p[0]; }
+  } else {
+    payload.totalAmount = parseFloat(document.getElementById('add-total').value) || 0;
+    var pd = document.getElementById('add-paiddate').value;
+    var ex = document.getElementById('add-expiry').value;
+    if (pd) { var p=pd.split('-'); payload.paidDate   = p[2]+'/'+p[1]+'/'+p[0]; }
+    if (ex) { var p=ex.split('-'); payload.expiryDate = p[2]+'/'+p[1]+'/'+p[0]; }
+  }
+
+  fetch(WORKER_URL + '?action=addCustomer&token=' + encodeURIComponent(agentToken), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    btn.disabled = false; btn.textContent = '💾 บันทึก';
+    if (d.success) {
+      alert('✅ '+d.message);
+      closeAddModal();
+      loadCustomers();
+    } else {
+      alert('❌ '+d.message);
+    }
+  })
+  .catch(function(err) {
+    btn.disabled = false; btn.textContent = '💾 บันทึก';
+    alert('❌ เชื่อมต่อไม่ได้: '+err.message);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  EDIT CUSTOMER
+// ══════════════════════════════════════════════════════════════
+function openEditModal(data) {
+  document.getElementById('edit-policy').value  = data.policyNumber  || '';
+  document.getElementById('edit-name').value    = data.customerName  || '';
+  document.getElementById('edit-plate').value   = data.licensePlate  || '';
+  document.getElementById('edit-lineid').value  = data.lineUserId    || '';
+  document.getElementById('edit-docurl').value  = data.docUrl        || '';
+  document.getElementById('editModal').classList.add('open');
+}
+function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
+
+function submitEditCustomer() {
+  var payload = {
+    policyNumber: document.getElementById('edit-policy').value,
+    customerName: document.getElementById('edit-name').value.trim(),
+    licensePlate: document.getElementById('edit-plate').value.trim(),
+    lineUserId:   document.getElementById('edit-lineid').value.trim(),
+    docUrl:       document.getElementById('edit-docurl').value.trim(),
+  };
+
+  fetch(WORKER_URL + '?action=updateCustomer&token=' + encodeURIComponent(agentToken), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      alert('✅ '+d.message);
+      closeEditModal();
+      loadCustomers();
+    } else {
+      alert('❌ '+d.message);
+    }
+  })
+  .catch(function(err){ alert('❌ '+err.message); });
 }
 </script>
 </body>
