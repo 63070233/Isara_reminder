@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>ISARA — ตัวแทน</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Sarabun',sans-serif;background:#f5f5f5;color:#333;min-height:100vh}
+
+  /* ── LOGIN ── */
+  .login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  .login-card{background:#fff;border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.12)}
+  .login-logo{text-align:center;margin-bottom:20px}
+  .login-logo .shield{font-size:52px}
+  .login-logo h1{font-size:22px;font-weight:700;color:#1565c0;margin-top:6px}
+  .login-logo p{font-size:13px;color:#888;margin-top:2px}
+  .login-card input{width:100%;padding:12px 14px;border:1.5px solid #ddd;border-radius:10px;font-size:15px;
+    font-family:'Sarabun',sans-serif;margin-bottom:12px;outline:none;transition:.2s}
+  .login-card input:focus{border-color:#1565c0}
+  .btn-login{width:100%;padding:13px;background:#1565c0;color:#fff;border:none;border-radius:10px;
+    font-size:16px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;transition:.2s}
+  .btn-login:hover{background:#0d47a1}
+  .login-err{color:#c62828;font-size:13px;text-align:center;margin-top:8px;min-height:20px}
+
+  /* ── APP SHELL ── */
+  #app{display:none}
+  .header{background:#1565c0;color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;
+    position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+  .header .avatar{width:36px;height:36px;border-radius:50%;background:#fff3;
+    display:flex;align-items:center;justify-content:center;font-size:18px}
+  .header .agent-info h2{font-size:15px;font-weight:700}
+  .header .agent-info p{font-size:12px;opacity:.8}
+  .header .logout{margin-left:auto;background:none;border:1.5px solid rgba(255,255,255,.5);
+    color:#fff;padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;font-family:'Sarabun',sans-serif}
+
+  /* ── TABS ── */
+  .tabs{display:flex;background:#fff;border-bottom:2px solid #e0e0e0;position:sticky;top:64px;z-index:99}
+  .tab{flex:1;text-align:center;padding:12px 4px;font-size:13px;cursor:pointer;color:#888;
+    border-bottom:3px solid transparent;transition:.2s;font-family:'Sarabun',sans-serif;background:none;border-top:none;border-left:none;border-right:none}
+  .tab.active{color:#1565c0;border-bottom-color:#1565c0;font-weight:700}
+  .badge{background:#e53935;color:#fff;border-radius:10px;font-size:10px;padding:1px 5px;margin-left:3px;vertical-align:middle}
+
+  /* ── CONTENT ── */
+  .page{display:none;padding:16px;max-width:600px;margin:0 auto}
+  .page.active{display:block}
+
+  /* ── STATS BAR ── */
+  .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+  .stat{background:#fff;border-radius:10px;padding:12px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+  .stat .num{font-size:22px;font-weight:700;color:#1565c0}
+  .stat .lbl{font-size:11px;color:#888;margin-top:2px}
+  .stat.danger .num{color:#c62828}
+  .stat.warn   .num{color:#e65100}
+
+  /* ── SEARCH ── */
+  .search-wrap{position:relative;margin-bottom:12px}
+  .search-wrap input{width:100%;padding:11px 14px 11px 38px;border:1.5px solid #ddd;border-radius:10px;
+    font-size:14px;font-family:'Sarabun',sans-serif;outline:none;background:#fff}
+  .search-wrap input:focus{border-color:#1565c0}
+  .search-wrap .ic{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#aaa;font-size:16px}
+
+  /* ── CUSTOMER CARD ── */
+  .cust-card{background:#fff;border-radius:12px;margin-bottom:12px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden}
+  .cust-head{display:flex;align-items:center;gap:10px;padding:14px}
+  .cust-pic{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#e3f2fd;
+    display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden}
+  .cust-pic img{width:44px;height:44px;border-radius:50%;object-fit:cover}
+  .cust-name{font-weight:700;font-size:15px}
+  .cust-sub{font-size:12px;color:#888;margin-top:2px}
+  .cust-badge{margin-left:auto;font-size:11px;padding:3px 8px;border-radius:10px;white-space:nowrap}
+  .badge-overdue{background:#ffebee;color:#c62828}
+  .badge-upcoming{background:#fff3e0;color:#e65100}
+  .badge-ok{background:#e8f5e9;color:#2e7d32}
+
+  .progress-wrap{padding:0 14px 10px}
+  .progress-lbl{display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px}
+  .progress-bar{background:#e0e0e0;border-radius:4px;height:6px}
+  .progress-fill{background:#1565c0;border-radius:4px;height:6px;transition:.4s}
+
+  .inst-list{border-top:1px solid #f0f0f0}
+  .inst-row{display:flex;align-items:center;padding:10px 14px;border-bottom:1px solid #fafafa}
+  .inst-row:last-child{border-bottom:none}
+  .inst-info{flex:1}
+  .inst-info .inst-no{font-size:12px;color:#888}
+  .inst-info .inst-due{font-size:13px;font-weight:600}
+  .inst-amt{font-size:14px;font-weight:700;color:#1565c0;margin:0 10px}
+  .inst-status{font-size:11px;padding:2px 8px;border-radius:10px}
+  .s-paid{background:#e8f5e9;color:#2e7d32}
+  .s-wait{background:#fff9c4;color:#f57f17}
+  .s-overdue{background:#ffebee;color:#c62828}
+  .s-pending{background:#e3f2fd;color:#1565c0}
+  .btn-slip{font-size:12px;padding:6px 12px;background:#1565c0;color:#fff;border:none;border-radius:8px;
+    cursor:pointer;font-family:'Sarabun',sans-serif;margin-left:8px;white-space:nowrap}
+  .btn-slip:disabled{background:#ccc;cursor:not-allowed}
+
+  /* ── SLIP HISTORY ── */
+  .slip-card{background:#fff;border-radius:12px;margin-bottom:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden}
+  .slip-head{padding:12px 14px;display:flex;align-items:center;gap:10px}
+  .slip-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .dot-pending{background:#ffd740}
+  .dot-approved{background:#4caf50}
+  .dot-rejected{background:#ef5350}
+  .slip-title{font-weight:700;font-size:14px}
+  .slip-sub{font-size:12px;color:#888}
+  .slip-detail{padding:0 14px 12px;display:flex;gap:10px;align-items:flex-start}
+  .slip-img{width:80px;height:80px;border-radius:8px;object-fit:cover;border:1px solid #eee;flex-shrink:0;cursor:pointer}
+  .slip-img-ph{width:80px;height:80px;border-radius:8px;background:#f5f5f5;border:1px solid #eee;
+    display:flex;align-items:center;justify-content:center;color:#bbb;font-size:28px;flex-shrink:0}
+  .slip-meta{flex:1;font-size:12px;color:#555;line-height:1.7}
+  .slip-meta .note{color:#c62828;margin-top:4px}
+
+  /* ── MODAL ── */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:flex-end}
+  .modal-bg.open{display:flex}
+  .modal{background:#fff;border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-height:90vh;overflow-y:auto}
+  .modal h3{font-size:17px;font-weight:700;margin-bottom:16px}
+  .modal label{font-size:13px;color:#666;display:block;margin-bottom:4px;margin-top:12px}
+  .modal input,.modal textarea,.modal select{
+    width:100%;padding:10px 12px;border:1.5px solid #ddd;border-radius:10px;
+    font-size:14px;font-family:'Sarabun',sans-serif;outline:none}
+  .modal input:focus,.modal textarea:focus{border-color:#1565c0}
+  .modal-actions{display:flex;gap:10px;margin-top:20px}
+  .btn-cancel{flex:1;padding:12px;background:#f5f5f5;border:none;border-radius:10px;
+    font-size:15px;cursor:pointer;font-family:'Sarabun',sans-serif}
+  .btn-submit{flex:2;padding:12px;background:#1565c0;color:#fff;border:none;border-radius:10px;
+    font-size:15px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif}
+  .btn-submit:disabled{background:#90caf9}
+
+  .upload-area{border:2px dashed #90caf9;border-radius:12px;padding:20px;text-align:center;
+    cursor:pointer;background:#f8fbff;margin-top:8px;transition:.2s}
+  .upload-area:hover{background:#e3f2fd;border-color:#1565c0}
+  .upload-area input[type=file]{display:none}
+  .upload-preview{width:100%;max-height:200px;object-fit:contain;border-radius:8px;margin-top:10px}
+
+  .empty{text-align:center;padding:40px 20px;color:#aaa}
+  .empty .ic{font-size:48px;margin-bottom:10px}
+  .spinner{text-align:center;padding:40px;color:#aaa}
+
+  /* image viewer */
+  .img-viewer{position:fixed;inset:0;background:#000;z-index:300;display:none;align-items:center;justify-content:center}
+  .img-viewer.open{display:flex}
+  .img-viewer img{max-width:100%;max-height:100%;object-fit:contain}
+  .img-viewer .close{position:absolute;top:16px;right:16px;color:#fff;font-size:28px;cursor:pointer;
+    background:rgba(0,0,0,.5);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ════════════════════════════════════════════════════ -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="shield">🛡️</div>
+      <h1>ISARA ตัวแทน</h1>
+      <p>ระบบจัดการลูกค้า</p>
+    </div>
+    <input type="password" id="inToken" placeholder="รหัสผ่านตัวแทน" autocomplete="current-password">
+    <button class="btn-login" onclick="doLogin()">🔐 เข้าสู่ระบบ</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════════════════════ -->
+<div id="app">
+  <div class="header">
+    <div class="avatar">👤</div>
+    <div class="agent-info">
+      <h2 id="agentName">ตัวแทน</h2>
+      <p id="agentPhone"></p>
+    </div>
+    <button class="logout" onclick="doLogout()">ออก</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('customers')" id="tab-customers">👥 ลูกค้า</button>
+    <button class="tab" onclick="switchTab('slips')" id="tab-slips">📎 สลิป <span class="badge" id="pendingBadge" style="display:none">0</span></button>
+  </div>
+
+  <!-- ── ลูกค้า ── -->
+  <div class="page active" id="page-customers">
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="search-wrap">
+      <span class="ic">🔍</span>
+      <input type="text" id="searchBox" placeholder="ค้นหาชื่อ, ทะเบียน..." oninput="renderCustomers()">
+    </div>
+    <div id="custList"><div class="spinner">⏳ กำลังโหลด...</div></div>
+  </div>
+
+  <!-- ── สลิป ── -->
+  <div class="page" id="page-slips">
+    <div id="slipList"><div class="spinner">⏳ กำลังโหลด...</div></div>
+  </div>
+</div>
+
+<!-- ══ SLIP MODAL ════════════════════════════════════════════════ -->
+<div class="modal-bg" id="slipModal">
+  <div class="modal">
+    <h3>📎 ส่งสลิปชำระ</h3>
+    <div id="slipModalInfo" style="background:#f0f4ff;border-radius:10px;padding:12px;font-size:13px;margin-bottom:4px"></div>
+
+    <label>แนบรูปสลิป <span style="color:#c62828">*</span></label>
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="onFileSelect(this)">
+      <div id="uploadPrompt">📷 แตะเพื่อถ่ายภาพ / เลือกรูปสลิป</div>
+      <img id="uploadPreview" class="upload-preview" style="display:none">
+    </div>
+
+    <label>ยอดชำระ (บาท)</label>
+    <input type="number" id="slipAmount" placeholder="0">
+
+    <label>หมายเหตุ (ถ้ามี)</label>
+    <input type="text" id="slipNote" placeholder="เช่น โอนเมื่อ 10.30 น.">
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSlipModal()">ยกเลิก</button>
+      <button class="btn-submit" id="btnSubmitSlip" onclick="submitSlip()">📤 ส่งสลิป</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ IMAGE VIEWER ═════════════════════════════════════════════ -->
+<div class="img-viewer" id="imgViewer">
+  <span class="close" onclick="document.getElementById('imgViewer').classList.remove('open')">✕</span>
+  <img id="imgViewerSrc" src="">
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════════════
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzte-NzPR1_NuGkxUC2bajoT2Un3k15FMT1HT-f8fo-6uNBwrheAlfRf0-MrNwOiPmNrg/exec';
+
+// ══════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════
+let agentToken    = '';
+let agentInfo     = null;
+let customers     = [];
+let slips         = [];
+let pendingSlip   = null; // { customerName, licensePlate, policyNumber, installmentNo, amount }
+let slipImageB64  = '';
+
+// ══════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════
+(function init() {
+  const saved = localStorage.getItem('isara_agent_token');
+  if (saved) {
+    agentToken = saved;
+    loginWithToken(saved);
+  }
+  document.getElementById('inToken').addEventListener('keydown', function(e){
+    if (e.key === 'Enter') doLogin();
+  });
+})();
+
+// ══════════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════════
+function doLogin() {
+  const tok = document.getElementById('inToken').value.trim();
+  if (!tok) return;
+  document.getElementById('loginErr').textContent = '';
+  loginWithToken(tok);
+}
+
+function loginWithToken(tok) {
+  fetch(GAS_URL + '?action=agentLogin&token=' + encodeURIComponent(tok))
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (!d.success) {
+        document.getElementById('loginErr').textContent = '❌ รหัสผ่านไม่ถูกต้อง';
+        localStorage.removeItem('isara_agent_token');
+        return;
+      }
+      agentToken = tok;
+      agentInfo  = d.agent;
+      localStorage.setItem('isara_agent_token', tok);
+      showApp();
+    })
+    .catch(function(err) {
+      document.getElementById('loginErr').textContent = '⚠️ เชื่อมต่อไม่ได้ ลองอีกครั้ง';
+    });
+}
+
+function showApp() {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('agentName').textContent = agentInfo.name || 'ตัวแทน';
+  document.getElementById('agentPhone').textContent = agentInfo.phone || '';
+  loadData();
+}
+
+function doLogout() {
+  if (!confirm('ออกจากระบบ?')) return;
+  localStorage.removeItem('isara_agent_token');
+  location.reload();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════════════════════
+function loadData() {
+  loadCustomers();
+  loadSlips();
+}
+
+function loadCustomers() {
+  document.getElementById('custList').innerHTML = '<div class="spinner">⏳ กำลังโหลด...</div>';
+  fetch(GAS_URL + '?action=agentData&token=' + encodeURIComponent(agentToken))
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (!d.success) { document.getElementById('custList').innerHTML = '<div class="empty">⚠️ '+d.message+'</div>'; return; }
+      customers = d.customers || [];
+      renderStats(d.stats);
+      renderCustomers();
+    })
+    .catch(function(){ document.getElementById('custList').innerHTML = '<div class="empty">⚠️ โหลดข้อมูลไม่ได้</div>'; });
+}
+
+function loadSlips() {
+  fetch(GAS_URL + '?action=agentSlips&token=' + encodeURIComponent(agentToken))
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      slips = d.slips || [];
+      var pending = slips.filter(function(s){ return s.status === 'pending'; }).length;
+      var badge = document.getElementById('pendingBadge');
+      if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+      else badge.style.display = 'none';
+      renderSlips();
+    });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER CUSTOMERS
+// ══════════════════════════════════════════════════════════════
+function renderStats(stats) {
+  if (!stats) return;
+  document.getElementById('statsBar').innerHTML =
+    stat(stats.total,     'ลูกค้าทั้งหมด', '') +
+    stat(stats.overdue,   'ค้างชำระ',       'danger') +
+    stat(stats.upcoming7, 'ใกล้ถึง 7 วัน', 'warn');
+}
+function stat(n, lbl, cls) {
+  return '<div class="stat '+cls+'"><div class="num">'+n+'</div><div class="lbl">'+lbl+'</div></div>';
+}
+
+function renderCustomers() {
+  var q   = (document.getElementById('searchBox').value || '').toLowerCase();
+  var list = customers.filter(function(c) {
+    return !q || c.name.toLowerCase().includes(q) || c.plates.join(',').toLowerCase().includes(q);
+  });
+  if (list.length === 0) {
+    document.getElementById('custList').innerHTML = '<div class="empty"><div class="ic">👥</div>ไม่พบลูกค้า</div>';
+    return;
+  }
+  document.getElementById('custList').innerHTML = list.map(custCard).join('');
+}
+
+function custCard(c) {
+  var s   = c.summary;
+  var pct = s.total > 0 ? Math.round((s.paidCount / s.total) * 100) : 0;
+  var badgeCls = s.overdueCount > 0 ? 'badge-overdue' :
+                 (s.nextDue && s.nextDue.daysLeft <= 7 ? 'badge-upcoming' : 'badge-ok');
+  var badgeLbl = s.overdueCount > 0 ? '⚠️ ค้าง '+s.overdueCount+' งวด' :
+                 (s.nextDue && s.nextDue.daysLeft <= 7 ? '🔔 '+s.nextDue.daysLeft+' วัน' : '✅ ปกติ');
+
+  var picHtml = '';
+  if (c.profile && c.profile.pictureUrl)
+    picHtml = '<img src="'+c.profile.pictureUrl+'" alt="" onerror="this.style.display=\'none\'">';
+  else
+    picHtml = '👤';
+
+  var instRows = c.installments.slice(0,6).map(function(inst) {
+    var sCls = inst.status === 'ชำระแล้ว' ? 's-paid' : inst.overdue ? 's-overdue' : inst.status === 'รอยืนยัน' ? 's-pending' : 's-wait';
+    var sLbl = inst.status;
+    var canSubmit = inst.status !== 'ชำระแล้ว' && inst.status !== 'รอยืนยัน';
+    return '<div class="inst-row">'+
+      '<div class="inst-info"><div class="inst-no">งวดที่ '+inst.installmentNo+'/'+inst.totalInstallments+' • '+inst.policyNumber+'</div>'+
+      '<div class="inst-due">📅 '+inst.dueDate+'</div></div>'+
+      '<div class="inst-amt">฿'+Number(inst.amount).toLocaleString('th-TH')+'</div>'+
+      '<div class="inst-status '+sCls+'">'+sLbl+'</div>'+
+      (canSubmit ? '<button class="btn-slip" onclick=\'openSlipModal('+JSON.stringify({
+        customerName: c.name,
+        licensePlate: inst.licensePlate,
+        policyNumber: inst.policyNumber,
+        installmentNo: inst.installmentNo,
+        amount: inst.amount,
+      })+')\'>📎 ส่งสลิป</button>' : '')+
+      '</div>';
+  }).join('');
+
+  return '<div class="cust-card">'+
+    '<div class="cust-head">'+
+      '<div class="cust-pic">'+picHtml+'</div>'+
+      '<div><div class="cust-name">'+c.name+'</div>'+
+      '<div class="cust-sub">🚗 '+c.plates.join(', ')+(c.profile&&c.profile.phone?' • 📞'+c.profile.phone:'')+'</div></div>'+
+      '<span class="cust-badge '+badgeCls+'">'+badgeLbl+'</span>'+
+    '</div>'+
+    '<div class="progress-wrap">'+
+      '<div class="progress-lbl"><span>ชำระแล้ว '+s.paidCount+'/'+s.total+' งวด</span>'+
+      '<span>ค้างชำระ ฿'+Number(s.totalDue).toLocaleString('th-TH')+'</span></div>'+
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%"></div></div>'+
+    '</div>'+
+    '<div class="inst-list">'+instRows+'</div>'+
+  '</div>';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDER SLIPS
+// ══════════════════════════════════════════════════════════════
+function renderSlips() {
+  if (slips.length === 0) {
+    document.getElementById('slipList').innerHTML =
+      '<div class="empty"><div class="ic">📎</div>ยังไม่มีสลิปที่ส่ง</div>';
+    return;
+  }
+  document.getElementById('slipList').innerHTML = slips.map(slipCard).join('');
+}
+
+function slipCard(s) {
+  var dotCls = s.status === 'approved' ? 'dot-approved' : s.status === 'rejected' ? 'dot-rejected' : 'dot-pending';
+  var sLbl   = s.status === 'approved' ? '✅ อนุมัติแล้ว' : s.status === 'rejected' ? '❌ ปฏิเสธ' : '⏳ รอตรวจสอบ';
+  var imgHtml = s.imageUrl
+    ? '<img class="slip-img" src="'+s.imageUrl+'" alt="สลิป" onclick="viewImage(\''+s.imageUrl+'\')">'
+    : '<div class="slip-img-ph">🖼️</div>';
+  var noteHtml = s.adminNote ? '<div class="note">💬 หมายเหตุ: '+s.adminNote+'</div>' : '';
+  return '<div class="slip-card">'+
+    '<div class="slip-head">'+
+      '<div class="slip-status-dot '+dotCls+'"></div>'+
+      '<div><div class="slip-title">'+s.customerName+' — งวดที่ '+s.installmentNo+'</div>'+
+      '<div class="slip-sub">'+sLbl+' • '+s.timestamp+'</div></div>'+
+    '</div>'+
+    '<div class="slip-detail">'+imgHtml+
+      '<div class="slip-meta">'+
+        '📄 กรมธรรม์: '+s.policyNumber+'<br>'+
+        '🚗 ทะเบียน: '+s.licensePlate+'<br>'+
+        '💰 ยอด: ฿'+Number(s.amount).toLocaleString('th-TH')+
+        (s.verifiedAt ? '<br>🕐 ตรวจสอบ: '+s.verifiedAt : '')+
+        noteHtml+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SLIP MODAL
+// ══════════════════════════════════════════════════════════════
+function openSlipModal(inst) {
+  pendingSlip   = inst;
+  slipImageB64  = '';
+  document.getElementById('slipAmount').value    = inst.amount || '';
+  document.getElementById('slipNote').value      = '';
+  document.getElementById('fileInput').value     = '';
+  document.getElementById('uploadPreview').style.display = 'none';
+  document.getElementById('uploadPrompt').style.display  = '';
+  document.getElementById('slipModalInfo').innerHTML =
+    '<b>'+inst.customerName+'</b><br>🚗 '+inst.licensePlate+
+    ' | 📄 '+inst.policyNumber+' งวดที่ '+inst.installmentNo+
+    ' | 💰 ฿'+Number(inst.amount).toLocaleString('th-TH');
+  document.getElementById('slipModal').classList.add('open');
+}
+
+function closeSlipModal() {
+  document.getElementById('slipModal').classList.remove('open');
+  pendingSlip  = null;
+  slipImageB64 = '';
+}
+
+function onFileSelect(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    slipImageB64 = e.target.result;
+    document.getElementById('uploadPreview').src = slipImageB64;
+    document.getElementById('uploadPreview').style.display = 'block';
+    document.getElementById('uploadPrompt').style.display  = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function submitSlip() {
+  if (!pendingSlip) return;
+  if (!slipImageB64) { alert('กรุณาแนบรูปสลิปก่อน'); return; }
+
+  var btn = document.getElementById('btnSubmitSlip');
+  btn.disabled = true;
+  btn.textContent = '⏳ กำลังส่ง...';
+
+  var payload = Object.assign({}, pendingSlip, {
+    amount:      Number(document.getElementById('slipAmount').value) || pendingSlip.amount,
+    imageBase64: slipImageB64,
+    note:        document.getElementById('slipNote').value,
+  });
+
+  fetch(GAS_URL + '?action=submitSlip&token=' + encodeURIComponent(agentToken), {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    btn.disabled = false;
+    btn.textContent = '📤 ส่งสลิป';
+    if (d.success) {
+      alert('✅ ส่งสลิปสำเร็จ! รอแอดมินตรวจสอบ');
+      closeSlipModal();
+      loadData();
+    } else {
+      alert('❌ เกิดข้อผิดพลาด: ' + (d.message || 'ลองอีกครั้ง'));
+    }
+  })
+  .catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = '📤 ส่งสลิป';
+    alert('⚠️ เชื่อมต่อไม่ได้: ' + err.message);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TABS + IMAGE VIEWER
+// ══════════════════════════════════════════════════════════════
+function switchTab(name) {
+  ['customers','slips'].forEach(function(t) {
+    document.getElementById('page-'+t).classList.toggle('active', t===name);
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+  });
+}
+
+function viewImage(url) {
+  document.getElementById('imgViewerSrc').src = url;
+  document.getElementById('imgViewer').classList.add('open');
+}
+</script>
+</body>
+</html>
