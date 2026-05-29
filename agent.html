@@ -393,15 +393,13 @@
   <img id="imgViewerSrc" src="">
 </div>
 
+<script src="config.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════
-//  CONFIG
+//  CONFIG — โหลดจาก config.js
 // ══════════════════════════════════════════════════════════════
-const GAS_URL    = 'https://script.google.com/macros/s/AKfycbzte-NzPR1_NuGkxUC2bajoT2Un3k15FMT1HT-f8fo-6uNBwrheAlfRf0-MrNwOiPmNrg/exec';
-// ↑ ใช้สำหรับ GET requests (login, loadCustomers, loadSlips)
-
-const WORKER_URL = 'https://isara-reminder.nattp-isr.workers.dev';
-// ↑ ใช้สำหรับ POST (ส่งสลิป) — Worker forward POST → GAS โดยไม่สูญเสีย body จาก 302 redirect
+const GAS_URL    = ISARA_CONFIG.GAS_URL;    // GET requests (login, loadCustomers, loadSlips)
+const WORKER_URL = ISARA_CONFIG.WORKER_URL; // POST (ส่งสลิป) — Worker forward POST → GAS
 
 // ══════════════════════════════════════════════════════════════
 //  STATE
