@@ -640,41 +640,86 @@ function renderPolicies() {
   let html = '';
   policies.forEach(pol => {
     const { color, bg, label, icon } = polStyle(pol);
+
+    // ── ปุ่มดูกรมธรรม์ ──
     const docBtn = pol.docUrl
       ? `<a href="${esc(pol.docUrl)}" target="_blank"
-            style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;
+            style="display:inline-flex;align-items:center;gap:5px;
                    font-size:13px;font-weight:700;color:#1565c0;text-decoration:none;
-                   background:#e3f2fd;padding:8px 14px;border-radius:10px;width:100%;
-                   justify-content:center">
-           📄 ดูกรมธรรม์
-         </a>`
+                   background:#e3f2fd;padding:8px 14px;border-radius:10px;
+                   width:100%;justify-content:center">📄 ดูกรมธรรม์</a>`
       : '';
+
+    // ── บริษัทประกัน + เบอร์ ──
+    const insurerBlock = pol.insurer
+      ? `<div style="display:flex;align-items:center;justify-content:space-between;
+                     margin-top:10px;background:#f5f5f5;border-radius:8px;padding:8px 12px">
+           <div>
+             <div style="font-size:10px;color:#888">บริษัทประกัน</div>
+             <div style="font-size:13px;font-weight:700;color:#333">${esc(pol.insurer)}</div>
+           </div>
+           ${pol.insurerPhone
+             ? `<a href="tel:${esc(pol.insurerPhone)}"
+                   style="background:#1565c0;color:#fff;border-radius:8px;padding:7px 12px;
+                          font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">
+                  📞 โทร
+                </a>`
+             : ''}
+         </div>`
+      : '';
+
+    // ── ประเภท + พ.ร.บ. badge ──
+    const typeBadge = pol.policyType
+      ? `<span style="background:#e8f5e9;color:#2e7d32;font-size:11px;font-weight:700;
+                      padding:2px 9px;border-radius:8px;margin-right:6px">${esc(pol.policyType)}</span>`
+      : '';
+    const compBadge = (pol.hasCompulsory === '✓' || pol.hasCompulsory === 'TRUE' || pol.hasCompulsory === 'true')
+      ? `<span style="background:#e3f2fd;color:#1565c0;font-size:11px;font-weight:700;
+                      padding:2px 9px;border-radius:8px">🔵 มี พ.ร.บ.</span>`
+      : `<span style="background:#f5f5f5;color:#aaa;font-size:11px;padding:2px 9px;border-radius:8px">ไม่มี พ.ร.บ.</span>`;
+
     html += `
-      <div class="card" style="margin-bottom:12px;border-left:4px solid ${color}">
+      <div class="card" style="margin-bottom:12px;border-left:4px solid ${color};padding:14px">
+        <!-- หัวการ์ด -->
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
           <div>
-            <div style="font-size:15px;font-weight:800">🚗 ${esc(pol.licensePlate || pol.policyNumber)}</div>
-            <div style="font-size:12px;color:var(--sub)">${esc(pol.policyType)}${pol.insurer ? ' · ' + esc(pol.insurer) : ''}</div>
+            <div style="font-size:16px;font-weight:800;color:#212121">
+              🚗 ${esc(pol.licensePlate || '—')}
+            </div>
+            <div style="margin-top:4px">${typeBadge}${compBadge}</div>
           </div>
           <div style="background:${bg};color:${color};font-size:11px;font-weight:700;
-                      padding:3px 10px;border-radius:99px;white-space:nowrap">${icon} ${label}</div>
+                      padding:4px 11px;border-radius:99px;white-space:nowrap;flex-shrink:0;margin-left:8px">
+            ${icon} ${label}
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+
+        <!-- ข้อมูลหลัก -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:12px;margin-bottom:10px">
           <div style="color:var(--sub)">เลขกรมธรรม์</div>
-          <div style="font-weight:600;text-align:right">${esc(pol.policyNumber)}</div>
-          ${pol.startDate ? `<div style="color:var(--sub)">วันเริ่มต้น</div>
+          <div style="font-weight:600;text-align:right;color:#333">${esc(pol.policyNumber)}</div>
+          ${pol.startDate ? `
+          <div style="color:var(--sub)">วันเริ่มต้น</div>
           <div style="text-align:right">${esc(pol.startDate)}</div>` : ''}
           <div style="color:var(--sub)">วันหมดอายุ</div>
           <div style="font-weight:700;color:${color};text-align:right">${esc(pol.expiryDate)}</div>
-          ${pol.premium > 0 ? `<div style="color:var(--sub)">เบี้ยประกัน</div>
-          <div style="text-align:right">฿${fmt(pol.premium)}</div>` : ''}
+          ${pol.premium > 0 ? `
+          <div style="color:var(--sub)">เบี้ยประกัน</div>
+          <div style="font-weight:700;text-align:right">฿${fmt(pol.premium)}</div>` : ''}
         </div>
+
+        <!-- บริษัทประกัน + เบอร์ -->
+        ${insurerBlock}
+
+        <!-- แจ้งเตือน urgent -->
         ${pol.urgent ? `
-        <div style="margin-top:10px;background:#fff3e0;border-radius:8px;padding:8px 10px;
-                    font-size:12px;color:#e65100;display:flex;align-items:center;gap:6px">
-          ⚠️ กรุณาติดต่อต่ออายุก่อนวันหมดอายุ
+        <div style="margin-top:10px;background:#fff3e0;border-radius:8px;padding:9px 12px;
+                    font-size:12px;color:#e65100;font-weight:600">
+          ⚠️ ใกล้หมดอายุแล้ว — กรุณาติดต่อต่ออายุโดยเร็ว
         </div>` : ''}
-        ${docBtn}
+
+        <!-- ปุ่มดูกรมธรรม์ -->
+        ${docBtn ? `<div style="margin-top:10px">${docBtn}</div>` : ''}
       </div>`;
   });
   el.innerHTML = html;
