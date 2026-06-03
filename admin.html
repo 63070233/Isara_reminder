@@ -217,6 +217,7 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
     <button class="ntab active" id="ntab-customers" onclick="switchAdminTab('customers')">👥 ลูกค้า</button>
     <button class="ntab" id="ntab-slips" onclick="switchAdminTab('slips')">📎 สลิป <span class="ntab-badge" id="slipBadge" style="display:none">0</span></button>
     <button class="ntab" id="ntab-agents" onclick="switchAdminTab('agents')">🤝 ตัวแทน</button>
+    <button class="ntab" id="ntab-export" onclick="switchAdminTab('export')">📥 Export</button>
   </div>
 
   <!-- ── ลูกค้า ── -->
@@ -261,6 +262,40 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
       <button class="btn-add-agent" onclick="openCreateAgentModal()">➕ เพิ่มตัวแทนใหม่</button>
       <div id="agent-list"><div class="spinner-wrap"><div class="spinner"></div></div></div>
     </div>
+  </div>
+
+  <!-- ── Export ── -->
+  <div id="section-export" style="display:none;padding:16px;max-width:540px;margin:0 auto">
+    <div style="font-size:15px;font-weight:700;color:#333;margin-bottom:16px">📥 Export รายงาน</div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+
+      <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">📋 งวดชำระทั้งหมด</div>
+        <div style="font-size:12px;color:#888;margin-bottom:12px">ข้อมูลงวด, สถานะ, วันครบกำหนด, ตัวแทน</div>
+        <button onclick="exportInstallments()" style="width:100%;padding:10px;background:#1565c0;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+          ⬇️ ดาวน์โหลด CSV
+        </button>
+      </div>
+
+      <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">📊 สรุปผลงานตัวแทน</div>
+        <div style="font-size:12px;color:#888;margin-bottom:12px">จำนวนลูกค้า, เบี้ยรวม, ค้างชำระ แยกรายตัวแทน</div>
+        <button onclick="exportAgentReport()" style="width:100%;padding:10px;background:#6a1b9a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+          ⬇️ ดาวน์โหลด CSV
+        </button>
+      </div>
+
+      <div style="background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">🛡️ รายการกรมธรรม์</div>
+        <div style="font-size:12px;color:#888;margin-bottom:12px">เลขกธ., ลูกค้า, วันหมดอายุ, เบี้ย, สถานะ</div>
+        <button onclick="exportPolicies()" style="width:100%;padding:10px;background:#2e7d32;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+          ⬇️ ดาวน์โหลด CSV
+        </button>
+      </div>
+
+    </div>
+    <div style="font-size:11px;color:#bbb;text-align:center;margin-top:16px">เปิดใน Excel → Data → From Text/CSV</div>
   </div>
 
 </div>
@@ -707,12 +742,95 @@ function closeModal(id) {
 //  NAV TABS
 // ══════════════════════════════════════════
 function switchAdminTab(name) {
-  ['customers','slips','agents'].forEach(t => {
+  ['customers','slips','agents','export'].forEach(t => {
     document.getElementById('section-'+t).style.display = t===name ? '' : 'none';
     document.getElementById('ntab-'+t).classList.toggle('active', t===name);
   });
   if (name === 'slips'  && allSlips.length  === 0) loadSlips();
   if (name === 'agents' && allAgents.length === 0) loadAgents();
+}
+
+// ══════════════════════════════════════════
+//  EXPORT / DOWNLOAD CSV
+// ══════════════════════════════════════════
+function downloadCSV(rows, filename) {
+  const bom  = '﻿'; // BOM สำหรับ Excel ภาษาไทย
+  const csv  = bom + rows.map(r => r.map(c => {
+    const s = String(c ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n')
+      ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',')).join('\n');
+  const a    = document.createElement('a');
+  a.href     = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename;
+  a.click();
+}
+
+function exportInstallments() {
+  // allData = array of customer objects, each has installments[]
+  const header = ['เลขกรมธรรม์','ชื่อลูกค้า','ทะเบียน','งวดที่','งวดรวม',
+                  'วันครบกำหนด','ยอด(บาท)','สถานะ','วันชำระ'];
+  const rows = [header];
+  allData.forEach(c => {
+    (c.installments || []).forEach(r => {
+      rows.push([
+        r.policyNumber, c.name||c.profile?.displayName||'',
+        r.licensePlate, r.installmentNo, r.totalInstallments,
+        r.dueDate, r.amount, r.status, r.paidDate||''
+      ]);
+    });
+  });
+  if (rows.length === 1) { alert('ยังไม่มีข้อมูล'); return; }
+  downloadCSV(rows, 'isara_installments_'+today()+'.csv');
+}
+
+function exportAgentReport() {
+  const map = {};
+  allData.forEach(c => {
+    (c.installments||[]).forEach(r => {
+      const ag = r.agentId || '(ไม่มี)';
+      if (!map[ag]) map[ag] = { total:0, paid:0, overdue:0, premium:0, customers:new Set() };
+      map[ag].total++;
+      map[ag].premium += Number(r.amount)||0;
+      map[ag].customers.add(r.policyNumber||r.licensePlate);
+      if (r.status === 'ชำระแล้ว') map[ag].paid++;
+      if (r.overdue || r.status === 'ค้างชำระ') map[ag].overdue++;
+    });
+  });
+  const header = ['รหัสตัวแทน','งวดทั้งหมด','ชำระแล้ว','ค้างชำระ','จำนวนกธ.','เบี้ยรวม(บาท)'];
+  const rows = [header];
+  Object.keys(map).sort().forEach(ag => {
+    const m = map[ag];
+    rows.push([ag, m.total, m.paid, m.overdue, m.customers.size, m.premium]);
+  });
+  if (rows.length === 1) { alert('ยังไม่มีข้อมูล'); return; }
+  downloadCSV(rows, 'isara_agents_'+today()+'.csv');
+}
+
+function exportPolicies() {
+  // เก็บข้อมูลกรมธรรม์จาก allData (ไม่ซ้ำ)
+  const seen = new Set();
+  const header = ['เลขกรมธรรม์','ชื่อลูกค้า','ทะเบียน','วันครบกำหนด','ยอด(บาท)','สถานะ'];
+  const rows = [header];
+  allData.forEach(c => {
+    const policies = {};
+    (c.installments||[]).forEach(r => {
+      if (!policies[r.policyNumber]) policies[r.policyNumber] = r;
+    });
+    Object.values(policies).forEach(r => {
+      if (!seen.has(r.policyNumber)) {
+        seen.add(r.policyNumber);
+        rows.push([r.policyNumber, c.name||'', r.licensePlate,
+                   r.dueDate||'', r.amount||0, r.status||'']);
+      }
+    });
+  });
+  if (rows.length === 1) { alert('ยังไม่มีข้อมูล'); return; }
+  downloadCSV(rows, 'isara_policies_'+today()+'.csv');
+}
+
+function today() {
+  return new Date().toISOString().slice(0,10).replace(/-/g,'');
 }
 
 // ══════════════════════════════════════════

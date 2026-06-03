@@ -436,14 +436,51 @@ function renderProfile() {
   const p  = data.profile || {};
   const name = p.displayName || profile.displayName || '';
   const pic  = p.pictureUrl  || profile.pictureUrl  || '';
-  el.innerHTML = pic
-    ? `<img class="profile-avatar" src="${esc(pic)}" onerror="this.style.display='none'" />
-       <div><div class="profile-name">${esc(name)}</div>
-       <div class="profile-phone">${p.phone ? '📞 ' + esc(p.phone) : '&nbsp;'}</div></div>`
-    : `<div class="profile-avatar-placeholder">👤</div>
-       <div><div class="profile-name">${esc(name)}</div></div>`;
-
+  const phoneHtml = p.phone
+    ? `<div class="profile-phone">📞 ${esc(p.phone)}</div>`
+    : `<div class="profile-phone" style="color:#ccc;font-size:11px">ยังไม่มีเบอร์โทร</div>`;
+  const avatar = pic
+    ? `<img class="profile-avatar" src="${esc(pic)}" onerror="this.style.display='none'" />`
+    : `<div class="profile-avatar-placeholder">👤</div>`;
+  el.innerHTML = `
+    ${avatar}
+    <div style="flex:1">
+      <div class="profile-name">${esc(name)}</div>
+      ${phoneHtml}
+    </div>
+    <button onclick="openEditProfile()" style="border:none;background:#f0f4ff;color:#1565c0;
+      border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0">
+      ✏️ แก้ไข
+    </button>`;
   document.getElementById('topbar-name').textContent = name;
+}
+
+/* ── Edit Profile Modal ── */
+function openEditProfile() {
+  const p = data.profile || {};
+  document.getElementById('edit-phone-input').value = p.phone || '';
+  document.getElementById('edit-profile-modal').style.display = 'flex';
+}
+function closeEditProfile() {
+  document.getElementById('edit-profile-modal').style.display = 'none';
+}
+async function saveProfile() {
+  const phone = document.getElementById('edit-phone-input').value.trim();
+  const btn   = document.getElementById('edit-profile-btn');
+  btn.disabled = true; btn.textContent = '⏳...';
+  try {
+    const url = GAS_URL + '?action=updateProfile&userId=' + encodeURIComponent(profile.userId)
+              + '&phone=' + encodeURIComponent(phone);
+    const res = await fetch(url, { redirect:'follow' });
+    const d   = await res.json();
+    if (d.success) {
+      if (!data.profile) data.profile = {};
+      data.profile.phone = phone;
+      renderProfile();
+      closeEditProfile();
+    } else { alert('❌ '+d.message); }
+  } catch(e) { alert('❌ เชื่อมต่อไม่ได้'); }
+  finally { btn.disabled = false; btn.textContent = '💾 บันทึก'; }
 }
 
 function renderSummary() {
@@ -664,17 +701,35 @@ function renderHistory() {
     el.innerHTML = '<div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">ยังไม่มีประวัติการชำระ</div></div>';
     return;
   }
-  let html = '<div class="card-title">ประวัติการชำระ</div>';
+  // stats
+  const paid    = hist.filter(h => h.status === 'ยืนยันแล้ว' || h.status === 'ชำระแล้ว');
+  const totalAmt= paid.reduce((s,h) => s + (h.amount||0), 0);
+  let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:#e8f5e9;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:#2e7d32">฿${fmt(totalAmt)}</div>
+        <div style="font-size:11px;color:#555;margin-top:2px">ยอดชำระทั้งหมด</div>
+      </div>
+      <div style="background:#e3f2fd;border-radius:12px;padding:14px;text-align:center">
+        <div style="font-size:22px;font-weight:800;color:#1565c0">${paid.length}</div>
+        <div style="font-size:11px;color:#555;margin-top:2px">ครั้งที่ชำระสำเร็จ</div>
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">
+      รายการล่าสุด
+    </div>`;
   hist.slice(0, 50).forEach(h => {
-    const icon = h.status === 'ยืนยัน' || h.status === 'ชำระแล้ว' ? '✅' : h.status === 'ปฏิเสธ' ? '❌' : '💰';
+    const ok   = h.status === 'ยืนยันแล้ว' || h.status === 'ชำระแล้ว';
+    const icon = ok ? '✅' : h.status === 'ปฏิเสธ' ? '❌' : '🕐';
+    const clr  = ok ? '#2e7d32' : h.status === 'ปฏิเสธ' ? '#c62828' : '#f57f17';
     html += `
-      <div class="hist-row">
+      <div class="hist-row" style="border-left:3px solid ${clr}">
         <div class="hist-icon">${icon}</div>
         <div class="hist-info">
-          <div class="hist-title">กรมธรรม์ ${esc(h.policyNumber)} · งวด ${h.installmentNo}</div>
-          <div class="hist-sub">${esc(h.date)}${h.note ? ' · ' + esc(h.note) : ''}</div>
+          <div class="hist-title">กธ. ${esc(h.policyNumber)} · งวด ${h.installmentNo}</div>
+          <div class="hist-sub">${esc(h.date)}${h.note ? ' · '+esc(h.note) : ''}</div>
         </div>
-        <div class="hist-amount">฿${fmt(h.amount)}</div>
+        <div class="hist-amount" style="color:${clr}">฿${fmt(h.amount)}</div>
       </div>`;
   });
   el.innerHTML = html;
@@ -783,5 +838,26 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 </script>
+
+<!-- ══ Edit Profile Modal ══ -->
+<div id="edit-profile-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);
+  z-index:999;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:24px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <h3 style="font-size:16px;font-weight:700;color:#212121">✏️ แก้ไขข้อมูลส่วนตัว</h3>
+      <button onclick="closeEditProfile()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999">✕</button>
+    </div>
+    <label style="font-size:12px;color:#757575;display:block;margin-bottom:6px;font-weight:600">เบอร์โทรศัพท์</label>
+    <input id="edit-phone-input" type="tel" placeholder="เช่น 081-234-5678"
+      style="width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:10px;
+        font-size:15px;margin-bottom:20px;box-sizing:border-box;font-family:inherit" />
+    <button id="edit-profile-btn" onclick="saveProfile()"
+      style="width:100%;padding:14px;background:var(--green);color:#fff;border:none;
+        border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">
+      💾 บันทึก
+    </button>
+  </div>
+</div>
+
 </body>
 </html>

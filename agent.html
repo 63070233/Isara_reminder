@@ -193,7 +193,10 @@
   .pol-body{padding:0 14px 12px;display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;color:#555}
   .pol-body .lbl{color:#aaa;font-size:11px}
   .pol-body .val{font-weight:600;color:#333;font-size:12px}
-  .pol-doc-row{padding:0 14px 12px}
+  .pol-doc-row{padding:0 14px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .renew-btn{padding:5px 12px;border-radius:8px;border:1.5px solid #1565c0;background:#e3f2fd;
+    color:#1565c0;font-size:12px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif;transition:.15s}
+  .renew-btn:hover{background:#1565c0;color:#fff}
   .pol-pay{display:inline-block;margin-top:6px;padding:2px 10px;border-radius:8px;font-size:11px}
   .pay-installment{background:#fff9c4;color:#f57f17}
   .pay-full{background:#e8f5e9;color:#2e7d32}
@@ -233,6 +236,7 @@
     <button class="tab active" onclick="switchTab('customers')" id="tab-customers">👥 ลูกค้า</button>
     <button class="tab" onclick="switchTab('slips')" id="tab-slips">📎 สลิป <span class="badge" id="pendingBadge" style="display:none">0</span></button>
     <button class="tab" onclick="switchTab('policies')" id="tab-policies">📋 กธ.</button>
+    <button class="tab" onclick="switchTab('summary')" id="tab-summary">📊 สรุป</button>
   </div>
 
   <!-- ── ลูกค้า ── -->
@@ -267,6 +271,12 @@
     </div>
     <div id="polList"><div class="spinner">⏳ กำลังโหลด...</div></div>
   </div>
+
+  <!-- ── สรุป Dashboard ── -->
+  <div class="page" id="page-summary">
+    <div id="summaryContent"><div class="spinner">⏳ กำลังโหลด...</div></div>
+  </div>
+
 </div>
 
 <!-- ══ SLIP MODAL ════════════════════════════════════════════════ -->
@@ -716,11 +726,89 @@ function submitSlip() {
 //  TABS + IMAGE VIEWER
 // ══════════════════════════════════════════════════════════════
 function switchTab(name) {
-  ['customers','slips','policies'].forEach(function(t) {
+  ['customers','slips','policies','summary'].forEach(function(t) {
     document.getElementById('page-'+t).classList.toggle('active', t===name);
     document.getElementById('tab-'+t).classList.toggle('active', t===name);
   });
+  if (name === 'summary') renderSummary();
 }
+
+function renderSummary() {
+  var el = document.getElementById('summaryContent');
+  var custs = customers || [];
+  var pols  = policies  || [];
+
+  // ── คำนวณ stats ──
+  var totalPremium  = pols.reduce(function(s,p){ return s + (Number(p.premium)||0); }, 0);
+  var activePols    = pols.filter(function(p){ return p.status==='active'; }).length;
+  var expiringPols  = pols.filter(function(p){
+    return p.daysLeft !== null && p.daysLeft <= 30 && p.daysLeft >= 0;
+  }).length;
+  var expiredPols   = pols.filter(function(p){ return p.status==='หมดอายุ'; }).length;
+  var renewedPols   = pols.filter(function(p){ return p.status==='ต่ออายุแล้ว'; }).length;
+  var renewRate     = (activePols + renewedPols) > 0
+    ? Math.round(renewedPols / (activePols + renewedPols + expiredPols) * 100) : 0;
+
+  // overdue customers
+  var overdueSet = new Set();
+  custs.forEach(function(c) {
+    (c.installments||[]).forEach(function(i) {
+      if (i.overdue) overdueSet.add(c.plate || c.licensePlate || i.policyNumber);
+    });
+  });
+
+  // Top 5 by premium
+  var sortedPols = pols.slice().sort(function(a,b){ return (Number(b.premium)||0)-(Number(a.premium)||0); });
+
+  function statCard(icon, val, lbl, bg, clr) {
+    return '<div style="background:'+bg+';border-radius:12px;padding:14px 12px;text-align:center">'+
+      '<div style="font-size:11px;color:'+clr+';opacity:.8;margin-bottom:4px">'+lbl+'</div>'+
+      '<div style="font-size:24px;font-weight:800;color:'+clr+'">'+icon+' '+val+'</div>'+
+    '</div>';
+  }
+
+  var html = '<div style="padding:4px 0 16px;font-size:15px;font-weight:700;color:#333">📊 สรุปผลงานของฉัน</div>';
+
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
+    + statCard('', pols.length, 'กธ.ทั้งหมด', '#e3f2fd', '#1565c0')
+    + statCard('✅', activePols, 'มีผลบังคับ', '#e8f5e9', '#2e7d32')
+    + statCard('🔔', expiringPols, 'ใกล้หมดอายุ', '#fff3e0', '#e65100')
+    + statCard('⚠️', overdueSet.size, 'ลูกค้าค้างชำระ', '#fce4ec', '#c62828')
+  + '</div>';
+
+  html += '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;box-shadow:0 1px 6px rgba(0,0,0,.07)">';
+  html += '<div style="font-size:12px;color:#888;font-weight:700;margin-bottom:10px">💰 เบี้ยรวมที่ดูแล</div>';
+  html += '<div style="font-size:28px;font-weight:800;color:#1565c0">฿'+totalPremium.toLocaleString('th-TH')+'</div>';
+  html += '<div style="font-size:12px;color:#888;margin-top:4px">จาก '+pols.length+' กรมธรรม์</div>';
+  // renewal rate bar
+  html += '<div style="margin-top:14px">';
+  html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px">';
+  html += '<span>อัตราต่ออายุ (Renewal Rate)</span><span style="font-weight:700;color:#2e7d32">'+renewRate+'%</span></div>';
+  html += '<div style="background:#e0e0e0;border-radius:4px;height:8px">';
+  html += '<div style="background:#06c755;border-radius:4px;height:8px;width:'+renewRate+'%;transition:.6s"></div></div>';
+  html += '</div></div>';
+
+  // Top 5 customers
+  if (sortedPols.length > 0) {
+    html += '<div style="font-size:12px;color:#888;font-weight:700;margin-bottom:8px">🏆 กธ.เบี้ยสูงสุด (Top 5)</div>';
+    html += '<div style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,.07)">';
+    sortedPols.slice(0,5).forEach(function(p, idx) {
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;'
+            + (idx>0?'border-top:1px solid #f0f0f0':'')+'">';
+      html += '<div style="width:24px;height:24px;border-radius:50%;background:#e3f2fd;color:#1565c0;'
+            + 'font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">'+(idx+1)+'</div>';
+      html += '<div style="flex:1"><div style="font-size:13px;font-weight:600">'+esc(p.customerName)+'</div>';
+      html += '<div style="font-size:11px;color:#888">'+(p.licensePlate||'')+'  '+p.policyNumber+'</div></div>';
+      html += '<div style="font-size:13px;font-weight:700;color:#1565c0">฿'+(Number(p.premium)||0).toLocaleString('th-TH')+'</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  el.innerHTML = html;
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function viewImage(url) {
   document.getElementById('imgViewerSrc').src = url;
@@ -952,6 +1040,9 @@ function policyCard(p) {
     ? '<a class="doc-link" href="'+p.docUrl+'" target="_blank">📄 ดูกรมธรรม์</a>'
     : '<span style="font-size:11px;color:#ccc">ยังไม่มีไฟล์</span>';
 
+  var canRenew = (bucket === 'expiring' || bucket === 'expired');
+  var renewBtn = '<button class="renew-btn" onclick="openRenewModal('+JSON.stringify(p)+')">🔄 ต่ออายุกรมธรรม์</button>';
+
   return '<div class="pol-card '+cardCls+'">'+
     '<div class="pol-head">'+
       '<div class="pol-icon">'+typeIcon+'</div>'+
@@ -972,9 +1063,155 @@ function policyCard(p) {
       '<div><div class="lbl">เบี้ยประกัน</div><div class="val">'+(p.premium ? '฿'+Number(p.premium).toLocaleString('th-TH') : '—')+'</div></div>'+
       '<div><div class="lbl">การชำระ</div><div class="val">'+payHtml+'</div></div>'+
     '</div>'+
-    '<div class="pol-doc-row">'+docBtn+'</div>'+
+    '<div class="pol-doc-row">'+docBtn+'  '+renewBtn+'</div>'+
   '</div>';
 }
+
+// ══════════════════════════════════════════════════════════════
+//  RENEWAL MODAL
+// ══════════════════════════════════════════════════════════════
+function openRenewModal(p) {
+  document.getElementById('rOldPolicyNo').value  = p.policyNumber  || '';
+  document.getElementById('rCustName').textContent  = p.customerName || '—';
+  document.getElementById('rPlate').textContent     = p.licensePlate || '—';
+  document.getElementById('rOldExpiry').textContent = p.expiryDate   || '—';
+  document.getElementById('rNewPolicyNo').value  = '';
+  document.getElementById('rPremium').value      = p.premium || '';
+  document.getElementById('rInsurer').value      = p.insurer || '';
+  document.getElementById('rPolicyType').value   = p.policyType || '';
+  document.getElementById('rPayType').value      = p.paymentType || 'จ่ายเต็ม';
+  document.getElementById('rInstSection').style.display = 'none';
+  // ตั้งวันเริ่มต้นเป็นวันนี้
+  var now = new Date();
+  document.getElementById('rStartDate').value = now.toISOString().slice(0,10);
+  document.getElementById('renewModal').style.display = 'flex';
+}
+function closeRenewModal() {
+  document.getElementById('renewModal').style.display = 'none';
+}
+function toggleInstSection() {
+  var v = document.getElementById('rPayType').value;
+  document.getElementById('rInstSection').style.display = v === 'ผ่อน' ? 'block' : 'none';
+}
+function submitRenew() {
+  var oldPol   = document.getElementById('rOldPolicyNo').value.trim();
+  var newPol   = document.getElementById('rNewPolicyNo').value.trim() || oldPol;
+  var premium  = parseFloat(document.getElementById('rPremium').value);
+  var startD   = document.getElementById('rStartDate').value;
+  var expiryD  = document.getElementById('rExpiryDate').value;
+  var insurer  = document.getElementById('rInsurer').value.trim();
+  var polType  = document.getElementById('rPolicyType').value.trim();
+  var payType  = document.getElementById('rPayType').value;
+  var instCnt  = parseInt(document.getElementById('rInstCount').value)||1;
+  var firstDue = document.getElementById('rFirstDue').value;
+
+  if (!expiryD)        { alert('กรุณาระบุวันหมดอายุใหม่'); return; }
+  if (!premium||premium<=0){ alert('กรุณาระบุเบี้ยประกันใหม่'); return; }
+
+  // แปลง date input (yyyy-mm-dd) → dd/MM/yyyy
+  function fmtDate(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p[2]+'/'+p[1]+'/'+p[0];
+  }
+
+  var body = {
+    oldPolicyNo: oldPol, newPolicyNo: newPol,
+    newPremium: premium, newStartDate: fmtDate(startD),
+    newExpiryDate: fmtDate(expiryD),
+    newInsurer: insurer, newPolicyType: polType,
+    paymentType: payType,
+    installmentCount: instCnt,
+    firstDueDate: fmtDate(firstDue),
+  };
+
+  document.getElementById('renewBtn').disabled = true;
+  document.getElementById('renewBtn').textContent = '⏳ กำลังบันทึก...';
+
+  fetch(WORKER_URL+'?action=agentRenew&token='+encodeURIComponent(agentToken), {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(d) {
+    if (d.success) {
+      alert('✅ ต่ออายุกรมธรรม์เรียบร้อย!\n'+d.message);
+      closeRenewModal();
+      loadPolicies();
+    } else {
+      alert('❌ '+d.message);
+    }
+  })
+  .catch(function(){ alert('❌ เชื่อมต่อไม่ได้'); })
+  .finally(function(){
+    document.getElementById('renewBtn').disabled = false;
+    document.getElementById('renewBtn').textContent = '✅ ยืนยันต่ออายุ';
+  });
+}
 </script>
+
+<!-- ══ RENEWAL MODAL ══════════════════════════════════════════ -->
+<div id="renewModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:999;align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:20px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:16px;font-weight:700;color:#1565c0">🔄 ต่ออายุกรมธรรม์</h3>
+      <button onclick="closeRenewModal()" style="border:none;background:none;font-size:20px;cursor:pointer;color:#999">✕</button>
+    </div>
+
+    <!-- ข้อมูลเดิม -->
+    <div style="background:#f5f5f5;border-radius:10px;padding:12px;margin-bottom:16px;font-size:13px">
+      <div><span style="color:#888">ลูกค้า: </span><b id="rCustName"></b></div>
+      <div><span style="color:#888">ทะเบียน: </span><b id="rPlate"></b></div>
+      <div><span style="color:#888">กธ.เดิม: </span><b><input id="rOldPolicyNo" style="border:none;background:transparent;font-weight:700;font-size:13px;width:160px"></b></div>
+      <div><span style="color:#888">หมดอายุเดิม: </span><b id="rOldExpiry" style="color:#c62828"></b></div>
+    </div>
+
+    <!-- กรมธรรม์ใหม่ -->
+    <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">เลขกธ.ใหม่ (ถ้าเปลี่ยน)</label>
+    <input id="rNewPolicyNo" placeholder="เว้นว่างถ้าใช้เลขเดิม" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box">
+
+    <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">ประเภทประกัน</label>
+    <input id="rPolicyType" placeholder="เช่น ชั้น 1 / 2+ / 3+ / พรบ." style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box">
+
+    <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">บริษัทประกัน</label>
+    <input id="rInsurer" placeholder="ชื่อบริษัทประกัน" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box">
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">วันเริ่มต้นใหม่</label>
+        <input type="date" id="rStartDate" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">วันหมดอายุใหม่ *</label>
+        <input type="date" id="rExpiryDate" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box">
+      </div>
+    </div>
+
+    <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">เบี้ยประกันใหม่ (บาท) *</label>
+    <input type="number" id="rPremium" placeholder="0" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box">
+
+    <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">การชำระ</label>
+    <select id="rPayType" onchange="toggleInstSection()" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;box-sizing:border-box">
+      <option value="จ่ายเต็ม">จ่ายเต็ม</option>
+      <option value="ผ่อน">ผ่อนชำระ</option>
+    </select>
+
+    <div id="rInstSection" style="display:none;background:#e3f2fd;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">จำนวนงวด</label>
+          <input type="number" id="rInstCount" value="10" min="1" max="60" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:12px;color:#888;display:block;margin-bottom:3px">วันครบงวดแรก</label>
+          <input type="date" id="rFirstDue" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box">
+        </div>
+      </div>
+    </div>
+
+    <button id="renewBtn" onclick="submitRenew()" style="width:100%;padding:13px;background:#1565c0;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">✅ ยืนยันต่ออายุ</button>
+  </div>
+</div>
+
 </body>
 </html>
