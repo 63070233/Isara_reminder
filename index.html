@@ -373,8 +373,9 @@
 // ══════════════════════════════════════════════
 //  CONFIG — โหลดจาก config.js
 // ══════════════════════════════════════════════
-const LIFF_ID = ISARA_CONFIG.LIFF_ID;
-const GAS_URL = ISARA_CONFIG.GAS_URL;
+const LIFF_ID     = ISARA_CONFIG.LIFF_ID;
+const GAS_URL     = ISARA_CONFIG.GAS_URL;
+const CONFIG_OA_ID = ISARA_CONFIG.LINE_OA_ID || '';  // ← เพิ่ม LINE_OA_ID ใน config.js ด้วย
 
 // ══════════════════════════════════════════════
 //  State
@@ -456,6 +457,21 @@ function renderProfile() {
 }
 
 /* ── Edit Profile Modal ── */
+/* ── แจ้งชำระทาง LINE: copy text แล้วเปิด LINE OA ── */
+function openLineNotify(policyNo, e) {
+  e.preventDefault();
+  const msg = 'ชำระแล้ว กรมธรรม์เลขที่ ' + policyNo;
+  // copy ไป clipboard ก่อน
+  if (navigator.clipboard) navigator.clipboard.writeText(msg).catch(()=>{});
+  // เปิด LINE OA ถ้ามี
+  if (CONFIG_OA_ID) {
+    window.open('https://line.me/R/ti/p/' + CONFIG_OA_ID, '_blank');
+  } else {
+    // fallback: แสดง prompt ให้ copy
+    alert('📋 คัดลอกข้อความนี้แล้วส่งในแชท LINE:\n\n' + msg);
+  }
+}
+
 function openEditProfile() {
   const p = data.profile || {};
   document.getElementById('edit-phone-input').value = p.phone || '';
@@ -612,6 +628,16 @@ function renderVehicleGroups() {
               <div class="inst-policy">กรมธรรม์ ${esc(inst.policyNumber)} · งวด ${inst.installmentNo}/${inst.totalInstallments}</div>
               <div class="inst-amount">฿${fmt(inst.amount)}</div>
               <div class="inst-due">${dueText}</div>
+              ${(inst.status === 'รอชำระ' || inst.status === 'ค้างชำระ' || inst.status === 'รอยืนยัน')
+                ? `<a href="https://line.me/R/oaMessage/${encodeURIComponent(CONFIG_OA_ID||'')}/?text=${encodeURIComponent('ชำระแล้ว กรมธรรม์เลขที่ '+inst.policyNumber)}"
+                      style="display:inline-flex;align-items:center;gap:4px;margin-top:5px;
+                             font-size:11px;font-weight:700;color:#fff;text-decoration:none;
+                             background:${inst.status==='รอยืนยัน'?'#e65100':'#06c755'};
+                             padding:5px 12px;border-radius:8px"
+                      onclick="openLineNotify('${esc(inst.policyNumber)}',event)">
+                     ${inst.status==='รอยืนยัน'?'⏳ รอยืนยัน':'💰 แจ้งชำระ'}
+                   </a>`
+                : ''}
             </div>
             <div class="inst-badge ${badgeCls}">${badge}</div>
           </div>`;
