@@ -707,23 +707,36 @@ function renderPolicies() {
       : '';
 
     // ── บริการฉุกเฉิน roadside ──
-    const roadsideBlock = pol.roadsidePhone
-      ? `<div style="display:flex;align-items:center;justify-content:space-between;
-                     margin-top:8px;background:#fff3e0;border-radius:8px;padding:9px 12px;
+    const hasRoadside = pol.roadsideAvail === 'มี';
+    const noRoadside  = pol.roadsideAvail === 'ไม่มี';
+    const roadsideBlock = hasRoadside && pol.roadsidePhone
+      ? `<div style="margin-top:8px;background:#fff3e0;border-radius:10px;padding:10px 12px;
                      border:1px solid #ffcc80">
-           <div>
-             <div style="font-size:10px;color:#e65100;font-weight:700">🚨 บริการช่วยเหลือฉุกเฉิน</div>
-             <div style="font-size:13px;font-weight:700;color:#333">${esc(pol.roadsidePhone)}</div>
-             <div style="font-size:10px;color:#888">กรณีรถเสีย / อุบัติเหตุ / ยางแบน</div>
+           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+             <div>
+               <div style="font-size:10px;color:#e65100;font-weight:700">🚨 บริการช่วยเหลือฉุกเฉิน</div>
+               <div style="font-size:14px;font-weight:800;color:#333">${esc(pol.roadsidePhone)}</div>
+               <div style="font-size:10px;color:#888">รถเสีย · ยางแบน · กุญแจล็อค · น้ำมันหมด</div>
+             </div>
+             <a href="tel:${esc(pol.roadsidePhone)}"
+                style="background:#e65100;color:#fff;border-radius:8px;padding:9px 16px;
+                       font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap">
+               🆘 โทร
+             </a>
            </div>
-           <a href="tel:${esc(pol.roadsidePhone)}"
-              style="background:#e65100;color:#fff;border-radius:8px;padding:8px 14px;
-                     font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;
-                     display:flex;align-items:center;gap:4px">
-             🆘 โทร
-           </a>
+           ${pol.roadsideCond
+             ? `<div style="margin-top:7px;font-size:11px;color:#e65100;background:#fff8f0;
+                            border-radius:6px;padding:5px 9px;border-left:3px solid #ffb74d">
+                  ⚠️ ${esc(pol.roadsideCond)}
+                </div>`
+             : ''}
          </div>`
-      : '';
+      : noRoadside
+        ? `<div style="margin-top:8px;display:flex;align-items:center;gap:6px;
+                       color:#bbb;font-size:11px;padding:7px 0">
+             <span>🚘</span><span>ไม่มีบริการช่วยเหลือฉุกเฉิน</span>
+           </div>`
+        : '';
 
     // ── ประเภท + พ.ร.บ. badge ──
     const typeBadge = pol.policyType
