@@ -664,7 +664,9 @@ function renderPolicies() {
   }
 
   let html = '';
-  policies.forEach(pol => {
+  policies.forEach((pol, polIdx) => {
+    const _noteKey = 'isara_note_' + pol.policyNumber;
+    const note = localStorage.getItem(_noteKey) || '';
     const { color, bg, label, icon } = polStyle(pol);
 
     // ── ปุ่มดูกรมธรรม์ ──
@@ -768,6 +770,9 @@ function renderPolicies() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:12px;margin-bottom:10px">
           <div style="color:var(--sub)">เลขกรมธรรม์</div>
           <div style="font-weight:600;text-align:right;color:#333">${esc(pol.policyNumber)}</div>
+          ${pol.customerName ? `
+          <div style="color:var(--sub)">ผู้เอาประกัน</div>
+          <div style="font-weight:700;text-align:right;color:#212121">${esc(pol.customerName)}</div>` : ''}
           ${pol.startDate ? `
           <div style="color:var(--sub)">วันเริ่มต้น</div>
           <div style="text-align:right">${esc(pol.startDate)}</div>` : ''}
@@ -776,6 +781,36 @@ function renderPolicies() {
           ${pol.premium > 0 ? `
           <div style="color:var(--sub)">เบี้ยประกัน</div>
           <div style="font-weight:700;text-align:right">฿${fmt(pol.premium)}</div>` : ''}
+        </div>
+
+        <!-- ── โน๊ตชื่อเล่น ── -->
+        <div style="margin-top:8px">
+          <div id="note-view-${polIdx}"
+            style="display:flex;align-items:center;gap:8px;background:#f9f9f9;border-radius:8px;
+                   padding:8px 12px;cursor:pointer;border:1px dashed #e0e0e0"
+            onclick="openNoteEdit(${polIdx})">
+            <span id="note-text-${polIdx}"
+              style="font-size:13px;color:${note ? '#333' : '#bbb'};flex:1;line-height:1.4">
+              📝 ${note ? esc(note) : 'เพิ่มโน๊ต / ชื่อเล่นรถ...'}
+            </span>
+            <span style="font-size:11px;color:#1565c0;font-weight:600;white-space:nowrap;flex-shrink:0">✏️ แก้ไข</span>
+          </div>
+          <div id="note-edit-${polIdx}" data-policy="${esc(pol.policyNumber)}"
+            style="display:none;margin-top:6px">
+            <input id="note-input-${polIdx}" type="text" value="${esc(note)}"
+              placeholder="เช่น รถพ่อ, รถลูก, รถคันเก่า..."
+              style="width:100%;padding:10px 12px;border:1.5px solid var(--green);
+                     border-radius:8px;font-size:13px;box-sizing:border-box;font-family:inherit;margin-bottom:8px"
+              onkeydown="if(event.key==='Enter')saveNote(${polIdx})" />
+            <div style="display:flex;gap:8px">
+              <button onclick="saveNote(${polIdx})"
+                style="flex:1;padding:9px;background:var(--green);color:#fff;border:none;
+                       border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">💾 บันทึก</button>
+              <button onclick="closeNoteEdit(${polIdx})"
+                style="padding:9px 16px;background:#f0f0f0;color:#555;border:none;
+                       border-radius:8px;font-size:13px;cursor:pointer">ยกเลิก</button>
+            </div>
+          </div>
         </div>
 
         <!-- บริษัทประกัน + เบอร์แจ้งเคลม -->
@@ -796,6 +831,28 @@ function renderPolicies() {
       </div>`;
   });
   el.innerHTML = html;
+}
+
+// ── Note / ชื่อเล่น helpers ──
+function openNoteEdit(idx) {
+  document.getElementById('note-view-' + idx).style.display = 'none';
+  const editEl = document.getElementById('note-edit-' + idx);
+  editEl.style.display = 'block';
+  document.getElementById('note-input-' + idx).focus();
+}
+function closeNoteEdit(idx) {
+  document.getElementById('note-view-' + idx).style.display = 'flex';
+  document.getElementById('note-edit-' + idx).style.display = 'none';
+}
+function saveNote(idx) {
+  const policyNo = document.getElementById('note-edit-' + idx).dataset.policy;
+  const val = document.getElementById('note-input-' + idx).value.trim();
+  localStorage.setItem('isara_note_' + policyNo, val);
+  const textEl = document.getElementById('note-text-' + idx);
+  textEl.textContent = '📝 ' + (val || 'เพิ่มโน๊ต / ชื่อเล่นรถ...');
+  textEl.style.color = val ? '#333' : '#bbb';
+  closeNoteEdit(idx);
+  showToast('📝 บันทึกโน๊ตแล้ว');
 }
 
 function polStyle(pol) {
