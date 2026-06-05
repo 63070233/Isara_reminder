@@ -766,22 +766,80 @@ function renderPolicies() {
           </div>
         </div>
 
-        <!-- ข้อมูลหลัก -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:12px;margin-bottom:10px">
+        <!-- ── Section: ข้อมูลกรมธรรม์ ── -->
+        <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;
+                    letter-spacing:.5px;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border)">
+          📋 กรมธรรม์
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;margin-bottom:12px">
           <div style="color:var(--sub)">เลขกรมธรรม์</div>
-          <div style="font-weight:600;text-align:right;color:#333">${esc(pol.policyNumber)}</div>
-          ${pol.customerName ? `
-          <div style="color:var(--sub)">ผู้เอาประกัน</div>
-          <div style="font-weight:700;text-align:right;color:#212121">${esc(pol.customerName)}</div>` : ''}
+          <div style="font-weight:600;text-align:right;color:#333;font-size:11px">${esc(pol.policyNumber)}</div>
           ${pol.startDate ? `
           <div style="color:var(--sub)">วันเริ่มต้น</div>
           <div style="text-align:right">${esc(pol.startDate)}</div>` : ''}
           <div style="color:var(--sub)">วันหมดอายุ</div>
           <div style="font-weight:700;color:${color};text-align:right">${esc(pol.expiryDate)}</div>
-          ${pol.premium > 0 ? `
+          ${pol.paymentType ? `
+          <div style="color:var(--sub)">ประเภทชำระ</div>
+          <div style="text-align:right">${esc(pol.paymentType)}</div>` : ''}
+        </div>
+
+        <!-- ── Section: เบี้ยประกัน ── -->
+        ${(pol.netPremium > 0 || pol.grossPremium > 0 || pol.premium > 0) ? `
+        <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;
+                    letter-spacing:.5px;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border)">
+          💰 เบี้ยประกัน
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;margin-bottom:12px">
+          ${pol.netPremium > 0 ? `
+          <div style="color:var(--sub)">เบี้ยสุทธิ</div>
+          <div style="font-weight:700;text-align:right">฿${fmt(pol.netPremium)}</div>` : ''}
+          ${pol.grossPremium > 0 ? `
+          <div style="color:var(--sub)">เบี้ยรวม</div>
+          <div style="font-weight:700;text-align:right">฿${fmt(pol.grossPremium)}</div>` : ''}
+          ${pol.premium > 0 && !(pol.netPremium > 0) && !(pol.grossPremium > 0) ? `
           <div style="color:var(--sub)">เบี้ยประกัน</div>
           <div style="font-weight:700;text-align:right">฿${fmt(pol.premium)}</div>` : ''}
+        </div>` : ''}
+
+        <!-- ── Section: ผู้เอาประกัน ── -->
+        ${(pol.customerName || pol.customerPhone || pol.address) ? `
+        <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;
+                    letter-spacing:.5px;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border)">
+          👤 ผู้เอาประกัน
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;margin-bottom:12px">
+          ${pol.customerName ? `
+          <div style="color:var(--sub)">ชื่อ</div>
+          <div style="font-weight:700;color:#212121;text-align:right">${esc(pol.customerName)}</div>` : ''}
+          ${pol.customerPhone ? `
+          <div style="color:var(--sub)">เบอร์โทร</div>
+          <div style="text-align:right"><a href="tel:${esc(pol.customerPhone)}" style="color:var(--blue);text-decoration:none;font-weight:600">${esc(pol.customerPhone)}</a></div>` : ''}
+          ${pol.address ? `
+          <div style="color:var(--sub);align-self:start">ที่อยู่</div>
+          <div style="text-align:right;line-height:1.5">${esc(pol.address)}</div>` : ''}
+        </div>` : ''}
+
+        <!-- ── Section: ข้อมูลตัวรถ ── -->
+        ${(pol.vehicleBrand || pol.vehicleModel || pol.vehicleYear || pol.vehicleCode) ? `
+        <div style="font-size:10px;font-weight:700;color:var(--sub);text-transform:uppercase;
+                    letter-spacing:.5px;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid var(--border)">
+          🚗 ข้อมูลตัวรถ
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;margin-bottom:12px">
+          ${pol.vehicleBrand ? `
+          <div style="color:var(--sub)">ยี่ห้อ</div>
+          <div style="font-weight:600;text-align:right">${esc(pol.vehicleBrand)}</div>` : ''}
+          ${pol.vehicleModel ? `
+          <div style="color:var(--sub)">รุ่น</div>
+          <div style="text-align:right">${esc(pol.vehicleModel)}</div>` : ''}
+          ${pol.vehicleYear ? `
+          <div style="color:var(--sub)">ปีจดทะเบียน</div>
+          <div style="text-align:right">${esc(pol.vehicleYear)}</div>` : ''}
+          ${pol.vehicleCode ? `
+          <div style="color:var(--sub)">รหัสรถ</div>
+          <div style="font-size:10px;text-align:right;color:#555">${esc(pol.vehicleCode)}</div>` : ''}
+        </div>` : ''}
 
         <!-- ── โน๊ตชื่อเล่น ── -->
         <div style="margin-top:8px">
