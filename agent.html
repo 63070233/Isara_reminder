@@ -1027,67 +1027,109 @@ function getPolicyBucket(p) {
 }
 
 function policyCard(p) {
-  var bucket = getPolicyBucket(p);
-  var badgeCls = bucket === 'expired'  ? 'pb-expired'  :
-                 bucket === 'expiring' ? 'pb-expiring'  : 'pb-active';
-  var badgeLbl = bucket === 'expired'  ? '❌ หมดอายุแล้ว' :
-                 bucket === 'expiring' ? '🔔 อีก '+p.daysLeft+' วัน' : '✅ ปกติ';
-  var cardCls  = bucket === 'expired'  ? 'status-expired'  :
-                 bucket === 'expiring' ? 'status-expiring'  : 'status-active';
+  var bucket  = getPolicyBucket(p);
+  var color   = bucket === 'expired'  ? '#c62828' : bucket === 'expiring' ? '#e65100' : '#2e7d32';
+  var bg      = bucket === 'expired'  ? '#ffebee' : bucket === 'expiring' ? '#fff3e0' : '#e8f5e9';
+  var icon    = bucket === 'expired'  ? '🚨' : bucket === 'expiring' ? '🔔' : '🛡️';
+  var label   = bucket === 'expired'  ? 'หมดอายุแล้ว' : bucket === 'expiring' ? 'อีก '+p.daysLeft+' วัน' : 'มีผลบังคับ';
+  var cardCls = bucket === 'expired'  ? 'status-expired' : bucket === 'expiring' ? 'status-expiring' : 'status-active';
 
-  var payHtml = '';
-  if (p.paymentType === 'ผ่อน') {
-    payHtml = '<span class="pol-pay pay-installment">📅 ผ่อนชำระ</span>';
-  } else if (p.paymentType === 'จ่ายเต็ม') {
-    payHtml = '<span class="pol-pay pay-full">✅ จ่ายเต็ม</span>';
-  } else if (p.paymentType) {
-    payHtml = '<span class="pol-pay pay-unknown">'+p.paymentType+'</span>';
+  var hasCom     = p.hasCompulsory === '✓' || p.hasCompulsory === 'TRUE';
+  var typeBadge  = p.policyType
+    ? '<span style="background:#e8f5e9;color:#2e7d32;font-size:11px;font-weight:700;padding:2px 9px;border-radius:8px;margin-right:5px">'+p.policyType+'</span>'
+    : '';
+  var compBadge  = hasCom
+    ? '<span style="background:#e3f2fd;color:#1565c0;font-size:11px;font-weight:700;padding:2px 9px;border-radius:8px;margin-right:5px">🔵 มี พ.ร.บ.</span>'
+    : '<span style="background:#f5f5f5;color:#aaa;font-size:11px;padding:2px 9px;border-radius:8px">ไม่มี พ.ร.บ.</span>';
+  var garageBadge = p.garageType
+    ? '<span style="background:'+(p.garageType==='ซ่อมห้าง'?'#e8f5e9':'#fff3e0')+';color:'+(p.garageType==='ซ่อมห้าง'?'#2e7d32':'#e65100')+';font-size:11px;font-weight:700;padding:2px 9px;border-radius:8px;margin-right:5px">'+(p.garageType==='ซ่อมห้าง'?'🏢':'🔧')+' '+p.garageType+'</span>'
+    : '';
+
+  function sec(title, rows) {
+    var filtered = rows.filter(Boolean);
+    if (!filtered.length) return '';
+    return '<div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;'+
+           'margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid #f0f0f0">'+title+'</div>'+
+           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:12px;margin-bottom:10px">'+
+           filtered.join('')+'</div>';
+  }
+  function row(lbl, val, bold, clr) {
+    if (!val) return '';
+    return '<div style="color:#888">'+lbl+'</div><div style="'+(bold?'font-weight:700;':'')+'text-align:right'+(clr?';color:'+clr:'')+'">'+(val||'')+'</div>';
   }
 
-  var typeIcon = p.policyType ? '🔒' : '📋';
+  // ── บริษัทประกัน ──
+  var insurerBlock = p.insurer ? '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;background:#f5f5f5;border-radius:8px;padding:8px 12px">'+
+    '<div><div style="font-size:10px;color:#888">บริษัทประกัน</div><div style="font-size:13px;font-weight:700">'+p.insurer+'</div></div>'+
+    (p.insurerPhone ? '<a href="tel:'+p.insurerPhone+'" style="background:#1565c0;color:#fff;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">📞 แจ้งเคลม</a>' : '')+
+    '</div>' : '';
 
-  var docBtn = p.docUrl
-    ? '<a class="doc-link" href="'+p.docUrl+'" target="_blank">📄 ดูกรมธรรม์</a>'
-    : '<span style="font-size:11px;color:#ccc">ยังไม่มีไฟล์</span>';
+  // ── Roadside ──
+  var roadsideBlock = (p.roadsideAvail === 'มี' && p.roadsidePhone)
+    ? '<div style="background:#fff3e0;border-radius:10px;padding:10px 12px;border:1px solid #ffcc80;margin-bottom:8px">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
+      '<div><div style="font-size:10px;color:#e65100;font-weight:700">🚨 บริการช่วยเหลือฉุกเฉิน</div>'+
+      '<div style="font-size:13px;font-weight:800">'+p.roadsidePhone+'</div>'+
+      '<div style="font-size:10px;color:#888">รถเสีย · ยางแบน · กุญแจล็อค · น้ำมันหมด</div></div>'+
+      '<a href="tel:'+p.roadsidePhone+'" style="background:#e65100;color:#fff;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">🆘 โทร</a>'+
+      '</div>'+
+      (p.roadsideCond ? '<div style="margin-top:6px;font-size:11px;color:#e65100;background:#fff8f0;border-radius:6px;padding:4px 8px;border-left:3px solid #ffb74d">⚠️ '+p.roadsideCond+'</div>' : '')+
+      '</div>' : '';
 
-  var canRenew = (bucket === 'expiring' || bucket === 'expired');
+  // ── ค่าคอม (agent-only) ──
+  var commBlock = (p.commAmount > 0 || p.commRate > 0)
+    ? '<div style="margin-bottom:8px;background:#e8f5e9;border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border:1px solid #c8e6c9">'+
+      '<div><div style="font-size:10px;color:#2e7d32;font-weight:700">💰 ค่าคอมของคุณ</div>'+
+      (p.commRate>0?'<div style="font-size:10px;color:#888">อัตรา '+p.commRate+'% จากเบี้ย '+(p.premium?'฿'+Number(p.premium).toLocaleString('th-TH'):'')+'</div>':'')+
+      '</div><div style="font-size:16px;font-weight:800;color:#1b5e20">'+(p.commAmount>0?'฿'+Number(p.commAmount).toLocaleString('th-TH'):'คำนวณ...')+'</div></div>'
+    : '';
+
+  // ── ปุ่ม ──
+  var docBtn   = p.docUrl ? '<a class="doc-link" href="'+p.docUrl+'" target="_blank">📄 ดูกรมธรรม์</a>' : '';
   var renewBtn = '<button class="renew-btn" onclick="openRenewModal('+JSON.stringify(p)+')">🔄 ต่ออายุกรมธรรม์</button>';
 
-  return '<div class="pol-card '+cardCls+'">'+
-    '<div class="pol-head">'+
-      '<div class="pol-icon">'+typeIcon+'</div>'+
-      '<div class="pol-main">'+
-        '<div class="pol-name">'+p.customerName+'</div>'+
-        '<div class="pol-plate">'+
-          (p.licensePlate ? '🚗 '+p.licensePlate+'  ' : '')+
-          '<span style="color:#aaa;font-size:11px">'+p.policyNumber+'</span>'+
-        '</div>'+
+  return '<div class="pol-card '+cardCls+'" style="padding:14px">'+
+    // Header
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
+      '<div>'+
+        '<div style="font-size:16px;font-weight:800">🚗 '+(p.licensePlate||'—')+'</div>'+
+        '<div style="margin-top:4px">'+typeBadge+garageBadge+compBadge+'</div>'+
       '</div>'+
-      '<div class="pol-badge '+badgeCls+'">'+badgeLbl+'</div>'+
+      '<div style="background:'+bg+';color:'+color+';font-size:11px;font-weight:700;padding:4px 11px;border-radius:99px;white-space:nowrap;flex-shrink:0;margin-left:8px">'+
+        icon+' '+label+
+      '</div>'+
     '</div>'+
-    '<div class="pol-body">'+
-      '<div><div class="lbl">ประเภท</div><div class="val">'+(p.policyType||'—')+'</div></div>'+
-      '<div><div class="lbl">บริษัทประกัน</div><div class="val">'+(p.insurer||'—')+'</div></div>'+
-      '<div><div class="lbl">วันเริ่มต้น</div><div class="val">'+(p.startDate||'—')+'</div></div>'+
-      '<div><div class="lbl">วันหมดอายุ</div><div class="val">'+(p.expiryDate||'—')+'</div></div>'+
-      '<div><div class="lbl">เบี้ยประกัน</div><div class="val">'+(p.premium ? '฿'+Number(p.premium).toLocaleString('th-TH') : '—')+'</div></div>'+
-      '<div><div class="lbl">การชำระ</div><div class="val">'+payHtml+'</div></div>'+
-    '</div>'+
-    // ── บล็อคค่าคอม (แสดงเฉพาะตัวแทน) ──
-    (p.commAmount > 0 || p.commRate > 0
-      ? '<div style="margin:8px 0 2px;background:#e8f5e9;border-radius:8px;padding:8px 12px;'+
-        'display:flex;justify-content:space-between;align-items:center;border:1px solid #c8e6c9">'+
-          '<div>'+
-            '<div style="font-size:10px;color:#2e7d32;font-weight:700;margin-bottom:1px">💰 ค่าคอมของคุณ</div>'+
-            (p.commRate > 0 ? '<div style="font-size:10px;color:#888">อัตรา '+p.commRate+'% จากเบี้ย '+
-              (p.premium?'฿'+Number(p.premium).toLocaleString('th-TH'):'')+'</div>' : '')+
-          '</div>'+
-          '<div style="font-size:16px;font-weight:800;color:#1b5e20">'+
-            (p.commAmount > 0 ? '฿'+Number(p.commAmount).toLocaleString('th-TH') : 'คำนวณ...')+
-          '</div>'+
-        '</div>'
-      : '')+
-    '<div class="pol-doc-row">'+docBtn+'  '+renewBtn+'</div>'+
+
+    sec('📋 กรมธรรม์', [
+      row('เลขกรมธรรม์', '<span style="font-size:11px">'+p.policyNumber+'</span>', true),
+      p.startDate  ? row('วันเริ่มต้น', p.startDate)  : '',
+      row('วันหมดอายุ', p.expiryDate||'—', true, color),
+      p.paymentType? row('ประเภทชำระ', p.paymentType) : '',
+    ])+
+
+    ((p.netPremium>0 || p.grossPremium>0 || p.premium>0) ? sec('💰 เบี้ยประกัน', [
+      p.netPremium>0   ? row('เบี้ยสุทธิ', '฿'+Number(p.netPremium).toLocaleString('th-TH'), true) : '',
+      p.grossPremium>0 ? row('เบี้ยรวม',  '฿'+Number(p.grossPremium).toLocaleString('th-TH'), true) : '',
+      (p.premium>0 && !(p.netPremium>0)) ? row('เบี้ยประกัน', '฿'+Number(p.premium).toLocaleString('th-TH'), true) : '',
+    ]) : '')+
+
+    ((p.customerName || p.customerPhone || p.address) ? sec('👤 ผู้เอาประกัน', [
+      p.customerName  ? row('ชื่อ', '<b>'+p.customerName+'</b>') : '',
+      p.customerPhone ? row('เบอร์โทร', '<a href="tel:'+p.customerPhone+'" style="color:#1565c0">'+p.customerPhone+'</a>') : '',
+      p.address       ? row('ที่อยู่', p.address) : '',
+    ]) : '')+
+
+    ((p.vehicleBrand || p.vehicleModel || p.vehicleYear || p.vehicleCode) ? sec('🚗 ตัวรถ', [
+      p.vehicleBrand ? row('ยี่ห้อ', p.vehicleBrand) : '',
+      p.vehicleModel ? row('รุ่น',   p.vehicleModel) : '',
+      p.vehicleYear  ? row('ปีจดทะเบียน', p.vehicleYear) : '',
+      p.vehicleCode  ? row('รหัสรถ', '<span style="font-size:10px">'+p.vehicleCode+'</span>') : '',
+    ]) : '')+
+
+    insurerBlock+
+    roadsideBlock+
+    commBlock+
+    '<div class="pol-doc-row">'+docBtn+' '+renewBtn+'</div>'+
   '</div>';
 }
 

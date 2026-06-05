@@ -1375,6 +1375,133 @@ async function loadPolicies() {
   renderAdminPolicies();
 }
 
+function polStatusStyle(p) {
+  if (p.status === 'ต่ออายุแล้ว') return { color:'#1565c0', bg:'#e3f2fd', label:'ต่ออายุแล้ว', icon:'✅' };
+  if (p.status === 'ยกเลิก')      return { color:'#757575', bg:'#f5f5f5', label:'ยกเลิก',      icon:'—'  };
+  if (p.status === 'หมดอายุ')     return { color:'#c62828', bg:'#ffebee', label:'หมดอายุแล้ว', icon:'🚨' };
+  const days = p.daysLeft != null ? p.daysLeft : 999;
+  if (days <= 0)  return { color:'#c62828', bg:'#ffebee', label:'หมดอายุแล้ว', icon:'🚨' };
+  if (days <= 7)  return { color:'#e53935', bg:'#ffebee', label:`อีก ${days} วัน`, icon:'⚠️' };
+  if (days <= 30) return { color:'#e65100', bg:'#fff3e0', label:`อีก ${days} วัน`, icon:'🔔' };
+  return { color:'#2e7d32', bg:'#e8f5e9', label:'มีผลบังคับ', icon:'🛡️' };
+}
+
+function buildPolicyCardHTML(p, { showEdit = false } = {}) {
+  const { color, bg, label, icon } = polStatusStyle(p);
+  const hasCom  = p.hasCompulsory === '✓' || p.hasCompulsory === 'TRUE' || p.hasCompulsory === 'true';
+  const typeBadge = p.policyType
+    ? `<span style="background:#e8f5e9;color:#2e7d32;font-size:11px;font-weight:700;padding:2px 9px;border-radius:8px;margin-right:5px">${esc(p.policyType)}</span>`
+    : '';
+  const compBadge = hasCom
+    ? `<span style="background:#e3f2fd;color:#1565c0;font-size:11px;font-weight:700;padding:2px 9px;border-radius:8px;margin-right:5px">🔵 มี พ.ร.บ.</span>`
+    : `<span style="background:#f5f5f5;color:#aaa;font-size:11px;padding:2px 9px;border-radius:8px">ไม่มี พ.ร.บ.</span>`;
+  const garageBadge = p.garageType
+    ? `<span style="background:${p.garageType==='ซ่อมห้าง'?'#e8f5e9':'#fff3e0'};color:${p.garageType==='ซ่อมห้าง'?'#2e7d32':'#e65100'};font-size:11px;font-weight:700;padding:2px 9px;border-radius:8px;margin-right:5px">${p.garageType==='ซ่อมห้าง'?'🏢':'🔧'} ${esc(p.garageType)}</span>`
+    : '';
+
+  // ── Section helper ──
+  const sec = (title, rows) => rows.some(Boolean) ? `
+    <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;
+                margin-bottom:4px;padding-bottom:3px;border-bottom:1px solid #f0f0f0">${title}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:12px;margin-bottom:10px">
+      ${rows.filter(Boolean).join('')}
+    </div>` : '';
+  const row = (lbl, val, bold=false, clr='') =>
+    val ? `<div style="color:#888">${lbl}</div><div style="${bold?'font-weight:700;':''};text-align:right${clr?';color:'+clr:''}">${val}</div>` : '';
+
+  // ── Insurer block ──
+  const insurerBlock = p.insurer ? `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;
+                background:#f5f5f5;border-radius:8px;padding:8px 12px">
+      <div>
+        <div style="font-size:10px;color:#888">บริษัทประกัน</div>
+        <div style="font-size:13px;font-weight:700;color:#333">${esc(p.insurer)}</div>
+      </div>
+      ${p.insurerPhone
+        ? `<a href="tel:${esc(p.insurerPhone)}" style="background:#1565c0;color:#fff;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">📞 แจ้งเคลม</a>`
+        : ''}
+    </div>` : '';
+
+  // ── Roadside block ──
+  const roadsideBlock = p.roadsideAvail === 'มี' && p.roadsidePhone ? `
+    <div style="background:#fff3e0;border-radius:10px;padding:10px 12px;border:1px solid #ffcc80;margin-bottom:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div>
+          <div style="font-size:10px;color:#e65100;font-weight:700">🚨 บริการช่วยเหลือฉุกเฉิน</div>
+          <div style="font-size:13px;font-weight:800">${esc(p.roadsidePhone)}</div>
+          <div style="font-size:10px;color:#888">รถเสีย · ยางแบน · กุญแจล็อค · น้ำมันหมด</div>
+        </div>
+        <a href="tel:${esc(p.roadsidePhone)}" style="background:#e65100;color:#fff;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap">🆘 โทร</a>
+      </div>
+      ${p.roadsideCond ? `<div style="margin-top:6px;font-size:11px;color:#e65100;background:#fff8f0;border-radius:6px;padding:4px 8px;border-left:3px solid #ffb74d">⚠️ ${esc(p.roadsideCond)}</div>` : ''}
+    </div>` : '';
+
+  // ── Action buttons ──
+  const editBtn = showEdit ? `
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick='openEditPolicyModal(${JSON.stringify(p)})'
+        style="flex:1;padding:8px;background:#fff3e0;color:#e65100;border:1.5px solid #e65100;
+               border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+        ✏️ แก้ไข
+      </button>
+      <button onclick="confirmDeletePolicy('${esc(p.policyNumber)}','${esc(p.customerName)}')"
+        style="padding:8px 14px;background:#ffebee;color:#c62828;border:1.5px solid #c62828;
+               border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+        🗑️
+      </button>
+    </div>` : '';
+
+  // ── Agent info (admin-only) ──
+  const agentRow = p.agentName || p.agentId ? row('ตัวแทน', esc(p.agentName || p.agentId)) : '';
+
+  return `
+  <div style="background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,.08);
+              padding:14px;border-left:4px solid ${color};margin-bottom:0">
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div>
+        <div style="font-size:16px;font-weight:800">🚗 ${esc(p.licensePlate||'—')}</div>
+        <div style="margin-top:4px">${typeBadge}${garageBadge}${compBadge}</div>
+      </div>
+      <div style="background:${bg};color:${color};font-size:11px;font-weight:700;
+                  padding:4px 11px;border-radius:99px;white-space:nowrap;flex-shrink:0;margin-left:8px">
+        ${icon} ${label}
+      </div>
+    </div>
+
+    ${sec('📋 กรมธรรม์', [
+      row('เลขกรมธรรม์', `<span style="font-size:11px">${esc(p.policyNumber)}</span>`, true),
+      p.startDate  ? row('วันเริ่มต้น', esc(p.startDate))  : '',
+      row('วันหมดอายุ', esc(p.expiryDate||'—'), true, color),
+      p.paymentType? row('ประเภทชำระ', esc(p.paymentType)) : '',
+      agentRow,
+    ])}
+
+    ${(p.netPremium>0 || p.grossPremium>0 || p.premium>0) ? sec('💰 เบี้ยประกัน', [
+      p.netPremium>0   ? row('เบี้ยสุทธิ', '฿'+fmt(p.netPremium), true) : '',
+      p.grossPremium>0 ? row('เบี้ยรวม',  '฿'+fmt(p.grossPremium), true) : '',
+      (p.premium>0 && !(p.netPremium>0)) ? row('เบี้ยประกัน', '฿'+fmt(p.premium), true) : '',
+    ]) : ''}
+
+    ${(p.customerName || p.customerPhone || p.address) ? sec('👤 ผู้เอาประกัน', [
+      p.customerName  ? row('ชื่อ', `<b>${esc(p.customerName)}</b>`) : '',
+      p.customerPhone ? row('เบอร์โทร', `<a href="tel:${esc(p.customerPhone)}" style="color:#1565c0">${esc(p.customerPhone)}</a>`) : '',
+      p.address       ? row('ที่อยู่', esc(p.address)) : '',
+    ]) : ''}
+
+    ${(p.vehicleBrand || p.vehicleModel || p.vehicleYear || p.vehicleCode) ? sec('🚗 ตัวรถ', [
+      p.vehicleBrand ? row('ยี่ห้อ', esc(p.vehicleBrand)) : '',
+      p.vehicleModel ? row('รุ่น',   esc(p.vehicleModel)) : '',
+      p.vehicleYear  ? row('ปีจดทะเบียน', esc(p.vehicleYear)) : '',
+      p.vehicleCode  ? row('รหัสรถ', `<span style="font-size:10px">${esc(p.vehicleCode)}</span>`) : '',
+    ]) : ''}
+
+    ${insurerBlock}
+    ${roadsideBlock}
+    ${editBtn}
+  </div>`;
+}
+
 function renderAdminPolicies() {
   const q       = (document.getElementById('pol-search').value || '').toLowerCase();
   const agFilt  = document.getElementById('pol-filter-agent').value;
@@ -1395,49 +1522,140 @@ function renderAdminPolicies() {
     return;
   }
 
-  const statusColor = {
-    'active':'#2e7d32','หมดอายุ':'#c62828','ต่ออายุแล้ว':'#1565c0','ยกเลิก':'#757575'
-  };
-
   el.innerHTML = `
-    <div style="font-size:12px;color:#888;margin-bottom:8px">พบ ${list.length} รายการ</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
-    ${list.map(p => {
-      const sc = statusColor[p.status] || '#757575';
-      const hasCom = p.hasCompulsory === '✓' || p.hasCompulsory === 'TRUE';
-      return `
-      <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);
-                  border-left:4px solid ${sc};overflow:hidden">
-        <div style="padding:11px 14px;border-bottom:1px solid #f5f5f5">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-            <div>
-              <div style="font-size:14px;font-weight:800;color:#212121">🚗 ${esc(p.licensePlate||'—')}</div>
-              <div style="font-size:11px;color:#888;margin-top:1px">${esc(p.policyNumber)}</div>
-            </div>
-            <span style="background:${sc}22;color:${sc};font-size:10px;font-weight:700;
-                         padding:2px 8px;border-radius:10px;white-space:nowrap;flex-shrink:0">
-              ${esc(p.status||'active')}
-            </span>
-          </div>
-          <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
-            ${p.policyType ? `<span style="background:#e8f5e9;color:#2e7d32;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px">${esc(p.policyType)}</span>` : ''}
-            ${hasCom ? `<span style="background:#e3f2fd;color:#1565c0;font-size:10px;font-weight:700;padding:1px 7px;border-radius:6px">มี พ.ร.บ.</span>` : ''}
-          </div>
-        </div>
-        <div style="padding:10px 14px;font-size:12px;display:grid;grid-template-columns:auto 1fr;gap:3px 10px">
-          <span style="color:#888">ผู้เอาประกัน</span><span style="font-weight:600">${esc(p.customerName||'—')}</span>
-          ${p.vehicleBrand||p.vehicleModel ? `<span style="color:#888">ตัวรถ</span><span>${esc([p.vehicleBrand,p.vehicleModel,p.vehicleYear].filter(Boolean).join(' '))}</span>` : ''}
-          <span style="color:#888">วันหมด</span><span style="font-weight:600;color:${sc}">${esc(p.expiryDate||'—')}</span>
-          ${p.netPremium>0 || p.grossPremium>0 ? `<span style="color:#888">เบี้ย</span><span>สุทธิ ฿${fmt(p.netPremium)} / รวม ฿${fmt(p.grossPremium)}</span>` : p.premium>0 ? `<span style="color:#888">เบี้ย</span><span>฿${fmt(p.premium)}</span>` : ''}
-          <span style="color:#888">ตัวแทน</span><span>${esc(p.agentName||p.agentId||'—')}</span>
-          ${p.insurer ? `<span style="color:#888">บริษัท</span><span>${esc(p.insurer)}</span>` : ''}
-        </div>
-      </div>`;
-    }).join('')}
+    <div style="font-size:12px;color:#888;margin-bottom:10px">พบ ${list.length} รายการ</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px">
+      ${list.map(p => buildPolicyCardHTML(p, { showEdit: true })).join('')}
     </div>`;
 }
 
+let _polEditMode = false; // false = add, true = edit
+
+function _fillPolicyModal(p) {
+  const agSel = document.getElementById('pol-agentId');
+  agSel.innerHTML = '<option value="">-- ไม่ระบุ --</option>' +
+    allAgents.filter(a => a.status === 'active').map(a =>
+      `<option value="${esc(a.agentId)}">${esc(a.name)}${a.phone?' ('+esc(a.phone)+')':''}</option>`
+    ).join('');
+
+  const toDateInput = (ddmmyyyy) => {
+    if (!ddmmyyyy) return '';
+    const parts = ddmmyyyy.split('/');
+    if (parts.length === 3) return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
+    return '';
+  };
+
+  document.getElementById('pol-policyNumber').value   = p.policyNumber   || '';
+  document.getElementById('pol-customerName').value   = p.customerName   || '';
+  document.getElementById('pol-licensePlate').value   = p.licensePlate   || '';
+  document.getElementById('pol-policyType').value     = p.policyType     || '';
+  document.getElementById('pol-hasCompulsory').value  = p.hasCompulsory  || '';
+  document.getElementById('pol-startDate').value      = toDateInput(p.startDate);
+  document.getElementById('pol-expiryDate').value     = toDateInput(p.expiryDate);
+  document.getElementById('pol-paymentType').value    = p.paymentType    || '';
+  document.getElementById('pol-status').value         = p.status         || 'active';
+  document.getElementById('pol-agentId').value        = p.agentId        || '';
+  document.getElementById('pol-customerPhone').value  = p.customerPhone  || '';
+  document.getElementById('pol-address').value        = p.address        || '';
+  document.getElementById('pol-vehicleCode').value    = p.vehicleCode    || '';
+  document.getElementById('pol-vehicleBrand').value   = p.vehicleBrand   || '';
+  document.getElementById('pol-vehicleModel').value   = p.vehicleModel   || '';
+  document.getElementById('pol-vehicleYear').value    = p.vehicleYear    || '';
+  document.getElementById('pol-premium').value        = p.premium        || '';
+  document.getElementById('pol-netPremium').value     = p.netPremium     || '';
+  document.getElementById('pol-grossPremium').value   = p.grossPremium   || '';
+  document.getElementById('pol-insurer').value        = p.insurer        || '';
+  document.getElementById('pol-insurerPhone').value   = p.insurerPhone   || '';
+  document.getElementById('pol-garageType').value     = p.garageType     || '';
+  document.getElementById('pol-roadsideAvail').value  = p.roadsideAvail  || '';
+  document.getElementById('pol-roadsidePhone').value  = p.roadsidePhone  || '';
+  document.getElementById('pol-roadsideCond').value   = p.roadsideCond   || '';
+  document.getElementById('pol-submit-btn').disabled  = false;
+}
+
+function openEditPolicyModal(p) {
+  _polEditMode = true;
+  document.querySelector('#modal-policy .modal-title').textContent = '✏️ แก้ไขกรมธรรม์';
+  document.getElementById('pol-submit-btn').textContent = '💾 บันทึกการแก้ไข';
+  document.getElementById('pol-policyNumber').readOnly = true;
+  document.getElementById('pol-policyNumber').style.background = '#f5f5f5';
+  _fillPolicyModal(p);
+  if (!allAgents.length) loadAgents().then(() => {
+    document.getElementById('pol-agentId').innerHTML =
+      '<option value="">-- ไม่ระบุ --</option>' +
+      allAgents.filter(a => a.status === 'active').map(a =>
+        `<option value="${esc(a.agentId)}">${esc(a.name)}</option>`).join('');
+    document.getElementById('pol-agentId').value = p.agentId || '';
+  });
+  document.getElementById('modal-policy').style.display = 'flex';
+}
+
+async function confirmUpdatePolicy() {
+  const pNo   = document.getElementById('pol-policyNumber').value.trim();
+  const cName = document.getElementById('pol-customerName').value.trim();
+  if (!pNo || !cName) { showToast('กรุณากรอกข้อมูลให้ครบ'); return; }
+
+  const btn = document.getElementById('pol-submit-btn');
+  btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+
+  const d = {
+    policyNumber:  pNo,
+    customerName:  cName,
+    licensePlate:  document.getElementById('pol-licensePlate').value.trim(),
+    policyType:    document.getElementById('pol-policyType').value,
+    hasCompulsory: document.getElementById('pol-hasCompulsory').value,
+    startDate:     document.getElementById('pol-startDate').value,
+    expiryDate:    document.getElementById('pol-expiryDate').value,
+    paymentType:   document.getElementById('pol-paymentType').value,
+    status:        document.getElementById('pol-status').value,
+    agentId:       document.getElementById('pol-agentId').value,
+    customerPhone: document.getElementById('pol-customerPhone').value.trim(),
+    address:       document.getElementById('pol-address').value.trim(),
+    vehicleCode:   document.getElementById('pol-vehicleCode').value.trim(),
+    vehicleBrand:  document.getElementById('pol-vehicleBrand').value.trim(),
+    vehicleModel:  document.getElementById('pol-vehicleModel').value.trim(),
+    vehicleYear:   document.getElementById('pol-vehicleYear').value.trim(),
+    premium:       Number(document.getElementById('pol-premium').value)||0,
+    netPremium:    Number(document.getElementById('pol-netPremium').value)||0,
+    grossPremium:  Number(document.getElementById('pol-grossPremium').value)||0,
+    insurer:       document.getElementById('pol-insurer').value.trim(),
+    insurerPhone:  document.getElementById('pol-insurerPhone').value.trim(),
+    garageType:    document.getElementById('pol-garageType').value,
+    roadsideAvail: document.getElementById('pol-roadsideAvail').value,
+    roadsidePhone: document.getElementById('pol-roadsidePhone').value.trim(),
+    roadsideCond:  document.getElementById('pol-roadsideCond').value.trim(),
+  };
+
+  const res = await apiGet('updatePolicy', { data: encodeURIComponent(JSON.stringify(d)) });
+  if (res?.success) {
+    showToast('✅ ' + (res.message || 'อัปเดตสำเร็จ'));
+    closeModal('modal-policy');
+    loadPolicies();
+  } else {
+    showToast('❌ ' + (res?.message || 'เกิดข้อผิดพลาด'));
+    btn.disabled = false; btn.textContent = '💾 บันทึกการแก้ไข';
+  }
+}
+
+async function confirmDeletePolicy(policyNumber, customerName) {
+  if (!confirm(`ยืนยันการยกเลิกกรมธรรม์?\n\n${policyNumber} — ${customerName}\n\n(สถานะจะเปลี่ยนเป็น "ยกเลิก" ข้อมูลยังอยู่ในชีต)`)) return;
+  const res = await apiGet('deletePolicy', {
+    data: encodeURIComponent(JSON.stringify({ policyNumber }))
+  });
+  if (res?.success) {
+    showToast('🗑️ ' + (res.message || 'ยกเลิกกรมธรรม์แล้ว'));
+    loadPolicies();
+  } else {
+    showToast('❌ ' + (res?.message || 'เกิดข้อผิดพลาด'));
+  }
+}
+
 function openAddPolicyModal() {
+  _polEditMode = false;
+  document.querySelector('#modal-policy .modal-title').textContent = '🛡️ เพิ่มกรมธรรม์ใหม่';
+  document.getElementById('pol-submit-btn').textContent = '💾 บันทึกกรมธรรม์';
+  document.getElementById('pol-policyNumber').readOnly = false;
+  document.getElementById('pol-policyNumber').style.background = '';
   // เติม dropdown ตัวแทน
   const agSel = document.getElementById('pol-agentId');
   agSel.innerHTML = '<option value="">-- ไม่ระบุ --</option>' +
@@ -1471,6 +1689,8 @@ function openAddPolicyModal() {
 }
 
 async function confirmAddPolicy() {
+  if (_polEditMode) { await confirmUpdatePolicy(); return; }
+
   const pNo   = document.getElementById('pol-policyNumber').value.trim();
   const cName = document.getElementById('pol-customerName').value.trim();
   if (!pNo)   { showToast('กรุณาระบุเลขกรมธรรม์'); return; }
