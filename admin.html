@@ -1972,12 +1972,21 @@ async function loadInstallments() {
   renderInstallments();
 }
 
-function renderInstallments() {
-  const q    = (document.getElementById('inst-search').value || '').toLowerCase();
-  const stF  = document.getElementById('inst-filter-status').value;
-  const el   = document.getElementById('inst-list');
+const _instOpenGroups = new Set(); // เก็บ group keys ที่เปิดอยู่
 
-  const list = allInstallments.filter(i => {
+function toggleInstGroup(key) {
+  if (_instOpenGroups.has(key)) _instOpenGroups.delete(key);
+  else _instOpenGroups.add(key);
+  renderInstallments();
+}
+
+function renderInstallments() {
+  const q   = (document.getElementById('inst-search').value || '').toLowerCase();
+  const stF = document.getElementById('inst-filter-status').value;
+  const el  = document.getElementById('inst-list');
+
+  // กรองก่อน
+  const filtered = allInstallments.filter(i => {
     if (stF && i.status !== stF) return false;
     if (q) {
       const hay = [i.policyNumber, i.customerName, i.licensePlate, i.agentId].join(' ').toLowerCase();
@@ -1986,62 +1995,166 @@ function renderInstallments() {
     return true;
   });
 
-  if (!list.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>ไม่พบรายการ</div>'; return; }
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>ไม่พบรายการ</div>';
+    return;
+  }
+
+  // จัด group ตาม policyNumber
+  const groupMap = new Map();
+  filtered.forEach(i => {
+    const key = i.policyNumber || i.licensePlate || '—';
+    if (!groupMap.has(key)) groupMap.set(key, []);
+    groupMap.get(key).push(i);
+  });
 
   const statusColor = { 'ชำระแล้ว':'#2e7d32','รอชำระ':'#1565c0','รอยืนยัน':'#e65100','ค้างชำระ':'#c62828','ยกเลิก':'#9e9e9e' };
 
-  el.innerHTML = `<div style="font-size:12px;color:#888;margin-bottom:8px">พบ ${list.length} รายการ</div>
-  <div style="overflow-x:auto">
-  <table style="width:100%;border-collapse:collapse;font-size:12px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)">
-    <thead><tr style="background:#37474f;color:#fff">
-      <th style="padding:9px 10px;text-align:left">กรมธรรม์</th>
-      <th style="padding:9px 10px;text-align:left">ลูกค้า</th>
-      <th style="padding:9px 10px;text-align:center">งวด</th>
-      <th style="padding:9px 10px;text-align:right">ยอด</th>
-      <th style="padding:9px 10px;text-align:left">ครบกำหนด</th>
-      <th style="padding:9px 10px;text-align:center">สถานะ</th>
-      <th style="padding:9px 10px;text-align:center">จัดการ</th>
-    </tr></thead>
-    <tbody>
-    ${list.map((i,idx) => {
-      const sc = statusColor[i.status] || '#9e9e9e';
-      return `<tr style="${idx%2===1?'background:#fafafa':''}">
-        <td style="padding:8px 10px;font-size:11px">${esc(i.policyNumber)}<br><span style="color:#888">${esc(i.licensePlate)}</span></td>
-        <td style="padding:8px 10px">${esc(i.customerName||'—')}</td>
-        <td style="padding:8px 10px;text-align:center">${i.installmentNo}/${i.totalInstallments}</td>
-        <td style="padding:8px 10px;text-align:right;font-weight:700">฿${fmt(i.amount)}</td>
-        <td style="padding:8px 10px">${esc(i.dueDate||'—')}</td>
-        <td style="padding:8px 10px;text-align:center">
-          <span style="background:${sc}22;color:${sc};font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px">${esc(i.status)}</span>
-        </td>
-        <td style="padding:8px 10px;text-align:center;white-space:nowrap">
-          <button onclick='openInstModal(${JSON.stringify(i)})'
-            style="padding:4px 8px;background:#fff3e0;color:#e65100;border:1px solid #e65100;border-radius:6px;font-size:11px;cursor:pointer;margin-right:4px">✏️</button>
-          <button onclick="deleteInstallment('${esc(i.policyNumber)}',${i.installmentNo})"
-            style="padding:4px 8px;background:#ffebee;color:#c62828;border:1px solid #c62828;border-radius:6px;font-size:11px;cursor:pointer">🗑️</button>
-        </td>
-      </tr>`;
-    }).join('')}
-    </tbody>
-  </table></div>`;
+  // ถ้า search/filter เปิด group ที่ match ทั้งหมดอัตโนมัติ
+  if (q || stF) groupMap.forEach((_, k) => _instOpenGroups.add(k));
+
+  let html = `<div style="font-size:12px;color:#888;margin-bottom:10px">
+    ${groupMap.size} กรมธรรม์ · ${filtered.length} งวด
+  </div>`;
+
+  groupMap.forEach((rows, key) => {
+    rows.sort((a, b) => a.installmentNo - b.installmentNo);
+    const first      = rows[0];
+    const paidCount  = rows.filter(r => r.status === 'ชำระแล้ว').length;
+    const overdueCount = rows.filter(r => r.status === 'ค้างชำระ').length;
+    const pendingCount = rows.filter(r => r.status === 'รอชำระ' || r.status === 'รอยืนยัน').length;
+    const totalAmt   = rows.reduce((s, r) => s + (r.amount || 0), 0);
+    const dueAmt     = rows.filter(r => r.status !== 'ชำระแล้ว' && r.status !== 'ยกเลิก')
+                          .reduce((s, r) => s + (r.amount || 0), 0);
+    const isOpen     = _instOpenGroups.has(key);
+
+    // group status badge
+    let gBadge, gColor;
+    if (overdueCount > 0) {
+      gBadge = `⚠️ ค้าง ${overdueCount} งวด`; gColor = '#c62828';
+    } else if (paidCount === rows.length) {
+      gBadge = '✅ ชำระครบ'; gColor = '#2e7d32';
+    } else {
+      gBadge = `📋 รอชำระ ${pendingCount} งวด`; gColor = '#1565c0';
+    }
+
+    // pre-fill object for quick add
+    const addPreFill = JSON.stringify({
+      policyNumber: first.policyNumber,
+      customerName: first.customerName,
+      licensePlate: first.licensePlate,
+      agentId:      first.agentId,
+      totalInstallments: first.totalInstallments,
+    });
+
+    html += `
+    <div style="background:#fff;border-radius:12px;margin-bottom:10px;
+                box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden;
+                border-left:4px solid ${gColor}">
+
+      <!-- ── Group Header ── -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;
+                  user-select:none;flex-wrap:wrap"
+           onclick="toggleInstGroup('${esc(key)}')">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:14px;font-weight:800">🚗 ${esc(first.licensePlate||'ไม่ระบุ')}</span>
+            <span style="font-size:11px;color:#888;font-weight:400">${esc(first.policyNumber)}</span>
+          </div>
+          <div style="font-size:12px;color:#555;margin-top:2px">👤 ${esc(first.customerName||'—')}</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <!-- งวด progress -->
+          <div style="text-align:center;min-width:60px">
+            <div style="font-size:13px;font-weight:800;color:#1565c0">${paidCount}/${rows.length}</div>
+            <div style="font-size:10px;color:#aaa">งวด</div>
+          </div>
+          <!-- ยอดค้าง -->
+          ${dueAmt > 0 ? `<div style="text-align:right">
+            <div style="font-size:12px;font-weight:700;color:#c62828">฿${fmt(dueAmt)}</div>
+            <div style="font-size:10px;color:#aaa">ค้างชำระ</div>
+          </div>` : `<div style="text-align:right">
+            <div style="font-size:12px;font-weight:700;color:#2e7d32">฿${fmt(totalAmt)}</div>
+            <div style="font-size:10px;color:#aaa">รวม</div>
+          </div>`}
+          <!-- status badge -->
+          <span style="background:${gColor}18;color:${gColor};font-size:10px;font-weight:700;
+                       padding:3px 10px;border-radius:20px;white-space:nowrap">${gBadge}</span>
+          <!-- ➕ add -->
+          <button onclick="event.stopPropagation();openInstModal(${addPreFill})"
+            style="padding:5px 10px;background:var(--orange);color:#fff;border:none;border-radius:8px;
+                   font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">➕ งวด</button>
+          <!-- toggle arrow -->
+          <span style="color:#aaa;font-size:14px;transition:transform .2s;display:inline-block;
+                       transform:rotate(${isOpen?'180deg':'0deg'})">▼</span>
+        </div>
+      </div>
+
+      <!-- progress bar -->
+      <div style="height:3px;background:#f0f0f0;margin:0 14px">
+        <div style="height:3px;background:${gColor};border-radius:2px;
+                    width:${rows.length>0?Math.round(paidCount/rows.length*100):0}%;transition:width .4s"></div>
+      </div>
+
+      <!-- ── Rows (collapsible) ── -->
+      <div style="display:${isOpen?'block':'none'}">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:#f9f9f9;border-bottom:1px solid #ececec">
+              <th style="padding:7px 14px;text-align:left;font-weight:600;color:#888;font-size:11px">งวด</th>
+              <th style="padding:7px 10px;text-align:left;font-weight:600;color:#888;font-size:11px">ครบกำหนด</th>
+              <th style="padding:7px 10px;text-align:right;font-weight:600;color:#888;font-size:11px">ยอด</th>
+              <th style="padding:7px 10px;text-align:center;font-weight:600;color:#888;font-size:11px">สถานะ</th>
+              <th style="padding:7px 10px;text-align:center;font-weight:600;color:#888;font-size:11px">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((i, idx) => {
+              const sc = statusColor[i.status] || '#9e9e9e';
+              return `<tr style="${idx%2===1?'background:#fafafa':''}">
+                <td style="padding:8px 14px;font-weight:700">${i.installmentNo}<span style="color:#aaa;font-weight:400">/${i.totalInstallments}</span></td>
+                <td style="padding:8px 10px;color:#555">${esc(i.dueDate||'—')}</td>
+                <td style="padding:8px 10px;text-align:right;font-weight:700">฿${fmt(i.amount)}</td>
+                <td style="padding:8px 10px;text-align:center">
+                  <span style="background:${sc}20;color:${sc};font-size:10px;font-weight:700;padding:2px 9px;border-radius:8px">${esc(i.status)}</span>
+                </td>
+                <td style="padding:8px 10px;text-align:center;white-space:nowrap">
+                  <button onclick='openInstModal(${JSON.stringify(i)})'
+                    style="padding:4px 8px;background:#fff3e0;color:#e65100;border:1px solid #e65100;border-radius:6px;font-size:11px;cursor:pointer;margin-right:3px">✏️</button>
+                  <button onclick="deleteInstallment('${esc(i.policyNumber)}',${i.installmentNo})"
+                    style="padding:4px 8px;background:#ffebee;color:#c62828;border:1px solid #c62828;border-radius:6px;font-size:11px;cursor:pointer">🗑️</button>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
 }
 
 function openInstModal(inst) {
-  _instEditMode = !!inst;
-  document.getElementById('inst-modal-title').textContent = inst ? '✏️ แก้ไขงวดชำระ' : '➕ เพิ่มงวดชำระ';
   const toDate = (ddmmyyyy) => {
     if (!ddmmyyyy) return '';
     const p = ddmmyyyy.split('/');
     return p.length === 3 ? `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}` : '';
   };
+  // ถ้า inst มี installmentNo = edit mode, ถ้าไม่มี = add (pre-fill บางส่วน)
+  const isEdit = !!(inst?.installmentNo);
+  _instEditMode = isEdit;
+  document.getElementById('inst-modal-title').textContent = isEdit ? '✏️ แก้ไขงวดชำระ' : '➕ เพิ่มงวดชำระ';
+
   document.getElementById('inst-policyNumber').value     = inst?.policyNumber     || '';
-  document.getElementById('inst-policyNumber').readOnly  = !!inst;
-  document.getElementById('inst-policyNumber').style.background = inst ? '#f5f5f5' : '';
+  document.getElementById('inst-policyNumber').readOnly  = isEdit;
+  document.getElementById('inst-policyNumber').style.background = isEdit ? '#f5f5f5' : '';
   document.getElementById('inst-customerName').value     = inst?.customerName     || '';
   document.getElementById('inst-licensePlate').value     = inst?.licensePlate     || '';
-  document.getElementById('inst-installmentNo').value    = inst?.installmentNo    || '';
-  document.getElementById('inst-installmentNo').readOnly = !!inst;
-  document.getElementById('inst-installmentNo').style.background = inst ? '#f5f5f5' : '';
+  document.getElementById('inst-installmentNo').value    = isEdit ? (inst?.installmentNo||'') : '';
+  document.getElementById('inst-installmentNo').readOnly = isEdit;
+  document.getElementById('inst-installmentNo').style.background = isEdit ? '#f5f5f5' : '';
   document.getElementById('inst-totalInstallments').value= inst?.totalInstallments|| '';
   document.getElementById('inst-dueDate').value          = toDate(inst?.dueDate);
   document.getElementById('inst-amount').value           = inst?.amount           || '';
