@@ -1483,62 +1483,62 @@ function renderInstallments() {
     const uid      = 'ig-'+key.replace(/[^a-zA-Z0-9]/g,'_');
 
     const headerBadge = overdue > 0
-      ? \`<span style="background:#ffcdd2;color:#b71c1c;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">⚠️ ค้าง \${overdue}</span>\`
+      ? `<span style="background:#ffcdd2;color:#b71c1c;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">⚠️ ค้าง ${overdue}</span>`
       : paid === total
-        ? \`<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">✅ ครบแล้ว</span>\`
-        : \`<span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">💳 \${paid}/\${total}</span>\`;
+        ? `<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">✅ ครบแล้ว</span>`
+        : `<span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">💳 ${paid}/${total}</span>`;
 
     const instRows = rows.map(r => {
       const bg = statusColor[r.status]||'#f5f5f5';
       const tc = statusText[r.status]||'#333';
       const rJson = JSON.stringify(r).replace(/</g,'&lt;').replace(/"/g,'&quot;');
-      return \`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #f0f0f0;background:\${r.status==='ชำระแล้ว'?'#fafffe':'#fff'}">
-        <div style="width:28px;height:28px;border-radius:50%;background:\${bg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:\${tc};flex-shrink:0">\${r.installmentNo}</div>
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #f0f0f0;background:${r.status==='ชำระแล้ว'?'#fafffe':'#fff'}">
+        <div style="width:28px;height:28px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:${tc};flex-shrink:0">${r.installmentNo}</div>
         <div style="flex:1;font-size:12px">
-          <span style="font-weight:600">฿\${fmt(r.amount)}</span>
-          <span style="color:#888;margin-left:6px">ครบ \${esc(r.dueDate)}</span>
+          <span style="font-weight:600">฿${fmt(r.amount)}</span>
+          <span style="color:#888;margin-left:6px">ครบ ${esc(r.dueDate)}</span>
         </div>
-        <span style="background:\${bg};color:\${tc};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap">\${esc(r.status)}</span>
-        <button onclick="event.stopPropagation();openEditInstModal(\${rJson})"
+        <span style="background:${bg};color:${tc};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap">${esc(r.status)}</span>
+        <button onclick="event.stopPropagation();openEditInstModal(${rJson})"
           style="background:#e3f2fd;color:#1565c0;border:none;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer">✏️</button>
-        <button onclick="event.stopPropagation();deleteInst(\${r.rowIndex})"
+        <button onclick="event.stopPropagation();deleteInst(${r.rowIndex})"
           style="background:#fee2e2;color:#b91c1c;border:none;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer">🗑️</button>
-      </div>\`;
+      </div>`;
     }).join('');
 
-    return \`<div style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+    return `<div style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)">
       <!-- Card Header -->
-      <div onclick="toggleInstGroup('\${uid}')"
+      <div onclick="toggleInstGroup('${uid}')"
            style="display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none">
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700">\${esc(g.customerName)}
-            <span style="color:#888;font-weight:400;font-size:12px"> 🚗 \${esc(g.licensePlate)}</span>
+          <div style="font-size:13px;font-weight:700">${esc(g.customerName)}
+            <span style="color:#888;font-weight:400;font-size:12px"> 🚗 ${esc(g.licensePlate)}</span>
           </div>
           <div style="font-size:11px;color:#666;margin-top:3px">
-            \${esc(g.policyNumber)}
-            \${nextDue ? '· ถัดไป: <b>'+esc(nextDue.dueDate)+'</b> ฿'+fmt(nextDue.amount) : ''}
+            ${esc(g.policyNumber)}
+            ${nextDue ? '· ถัดไป: <b>'+esc(nextDue.dueDate)+'</b> ฿'+fmt(nextDue.amount) : ''}
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          \${headerBadge}
+          ${headerBadge}
           <div style="text-align:right;font-size:11px;color:#888">
-            <div>รวม ฿\${fmt(totalAmt)}</div>
-            <div style="color:#2e7d32">ชำระ ฿\${fmt(paidAmt)}</div>
+            <div>รวม ฿${fmt(totalAmt)}</div>
+            <div style="color:#2e7d32">ชำระ ฿${fmt(paidAmt)}</div>
           </div>
-          <div id="\${uid}-icon" style="font-size:14px;color:#999;transition:transform .2s">▼</div>
+          <div id="${uid}-icon" style="font-size:14px;color:#999;transition:transform .2s">▼</div>
         </div>
       </div>
       <!-- Rows (hidden by default) -->
-      <div id="\${uid}" style="display:none">
-        \${instRows}
+      <div id="${uid}" style="display:none">
+        ${instRows}
         <div style="padding:8px 16px;border-top:1px solid #f0f0f0;text-align:right">
-          <button onclick="openInstModal({policyNumber:'${esc(g.policyNumber)}',customerName:'${esc(g.customerName)}',licensePlate:'${esc(g.licensePlate)}',agentId:'${esc(g.agentId)}',installmentNo:\${total+1},totalInstallments:\${total+1}})"
+          <button onclick="openInstModal({policyNumber:'${esc(g.policyNumber)}',customerName:'${esc(g.customerName)}',licensePlate:'${esc(g.licensePlate)}',agentId:'${esc(g.agentId)}',installmentNo:${total+1},totalInstallments:${total+1}})"
             style="background:#fff3e0;color:#e65100;border:1px solid #ffe0b2;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">
             ➕ เพิ่มงวด
           </button>
         </div>
       </div>
-    </div>\`;
+    </div>`;
   }).join('');
 }
 function toggleInstGroup(uid) {
