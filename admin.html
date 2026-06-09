@@ -1448,30 +1448,106 @@ async function loadInstallments() {
   renderInstallments();
 }
 function renderInstallments() {
-  const q   = (document.getElementById('inst-search')?.value||'').toLowerCase();
-  const st  = document.getElementById('inst-filter-status')?.value||'';
-  const list = allInstallments.filter(r => {
+  const q  = (document.getElementById('inst-search')?.value||'').toLowerCase();
+  const st = document.getElementById('inst-filter-status')?.value||'';
+
+  // filter
+  const filtered = allInstallments.filter(r => {
     if (st && r.status !== st) return false;
-    if (q) {
-      const hay = [r.policyNumber,r.customerName,r.licensePlate,r.agentId].join(' ').toLowerCase();
-      return hay.includes(q);
-    }
+    if (q) return [r.policyNumber,r.customerName,r.licensePlate,r.agentId].join(' ').toLowerCase().includes(q);
     return true;
   });
-  if (!list.length) { document.getElementById('inst-list').innerHTML='<div class="empty-state">ไม่พบข้อมูล</div>'; return; }
+  if (!filtered.length) { document.getElementById('inst-list').innerHTML='<div class="empty-state">ไม่พบข้อมูล</div>'; return; }
+
+  // จัดกลุ่มตาม policyNumber
+  const groups = {};
+  filtered.forEach(r => {
+    const key = (r.policyNumber||'').trim() || (r.licensePlate||'?');
+    if (!groups[key]) groups[key] = { policyNumber: r.policyNumber, customerName: r.customerName,
+      licensePlate: r.licensePlate, agentId: r.agentId, rows: [] };
+    groups[key].rows.push(r);
+  });
+
   const statusColor = { 'รอชำระ':'#e3f2fd','รอยืนยัน':'#fff9c4','ชำระแล้ว':'#e8f5e9','ค้างชำระ':'#ffcdd2','ยกเลิก':'#f5f5f5' };
-  document.getElementById('inst-list').innerHTML = list.map(r => `
-    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700">${esc(r.customerName)} <span style="color:#888;font-weight:400">· ${esc(r.licensePlate)}</span></div>
-        <div style="font-size:11px;color:#666;margin-top:2px">${esc(r.policyNumber)} งวดที่ ${r.installmentNo}/${r.totalInstallments} · ฿${fmt(r.amount)} · ครบ ${esc(r.dueDate)}</div>
+  const statusText  = { 'รอชำระ':'#1565c0','รอยืนยัน':'#f57f17','ชำระแล้ว':'#2e7d32','ค้างชำระ':'#b71c1c','ยกเลิก':'#757575' };
+
+  document.getElementById('inst-list').innerHTML = Object.entries(groups).map(([key, g]) => {
+    const rows     = g.rows.sort((a,b)=>(a.installmentNo||0)-(b.installmentNo||0));
+    const paid     = rows.filter(r=>r.status==='ชำระแล้ว').length;
+    const overdue  = rows.filter(r=>r.status==='ค้างชำระ').length;
+    const pending  = rows.filter(r=>r.status==='รอชำระ'||r.status==='รอยืนยัน').length;
+    const total    = rows.length;
+    const totalAmt = rows.reduce((s,r)=>s+(Number(r.amount)||0),0);
+    const paidAmt  = rows.filter(r=>r.status==='ชำระแล้ว').reduce((s,r)=>s+(Number(r.amount)||0),0);
+    const nextDue  = rows.find(r=>r.status==='รอชำระ'||r.status==='ค้างชำระ');
+    const uid      = 'ig-'+key.replace(/[^a-zA-Z0-9]/g,'_');
+
+    const headerBadge = overdue > 0
+      ? \`<span style="background:#ffcdd2;color:#b71c1c;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">⚠️ ค้าง \${overdue}</span>\`
+      : paid === total
+        ? \`<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">✅ ครบแล้ว</span>\`
+        : \`<span style="background:#e3f2fd;color:#1565c0;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:700">💳 \${paid}/\${total}</span>\`;
+
+    const instRows = rows.map(r => {
+      const bg = statusColor[r.status]||'#f5f5f5';
+      const tc = statusText[r.status]||'#333';
+      const rJson = JSON.stringify(r).replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      return \`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #f0f0f0;background:\${r.status==='ชำระแล้ว'?'#fafffe':'#fff'}">
+        <div style="width:28px;height:28px;border-radius:50%;background:\${bg};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:\${tc};flex-shrink:0">\${r.installmentNo}</div>
+        <div style="flex:1;font-size:12px">
+          <span style="font-weight:600">฿\${fmt(r.amount)}</span>
+          <span style="color:#888;margin-left:6px">ครบ \${esc(r.dueDate)}</span>
+        </div>
+        <span style="background:\${bg};color:\${tc};padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;white-space:nowrap">\${esc(r.status)}</span>
+        <button onclick="event.stopPropagation();openEditInstModal(\${rJson})"
+          style="background:#e3f2fd;color:#1565c0;border:none;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer">✏️</button>
+        <button onclick="event.stopPropagation();deleteInst(\${r.rowIndex})"
+          style="background:#fee2e2;color:#b91c1c;border:none;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer">🗑️</button>
+      </div>\`;
+    }).join('');
+
+    return \`<div style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;margin-bottom:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05)">
+      <!-- Card Header -->
+      <div onclick="toggleInstGroup('\${uid}')"
+           style="display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">\${esc(g.customerName)}
+            <span style="color:#888;font-weight:400;font-size:12px"> 🚗 \${esc(g.licensePlate)}</span>
+          </div>
+          <div style="font-size:11px;color:#666;margin-top:3px">
+            \${esc(g.policyNumber)}
+            \${nextDue ? '· ถัดไป: <b>'+esc(nextDue.dueDate)+'</b> ฿'+fmt(nextDue.amount) : ''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          \${headerBadge}
+          <div style="text-align:right;font-size:11px;color:#888">
+            <div>รวม ฿\${fmt(totalAmt)}</div>
+            <div style="color:#2e7d32">ชำระ ฿\${fmt(paidAmt)}</div>
+          </div>
+          <div id="\${uid}-icon" style="font-size:14px;color:#999;transition:transform .2s">▼</div>
+        </div>
       </div>
-      <span style="background:${statusColor[r.status]||'#f5f5f5'};padding:3px 10px;border-radius:8px;font-size:12px;font-weight:600">${esc(r.status)}</span>
-      <button onclick="openEditInstModal(${JSON.stringify(r).replace(/</g,'&lt;')})"
-        style="background:#e3f2fd;color:#1565c0;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">✏️</button>
-      <button onclick="deleteInst(${r.rowIndex})"
-        style="background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">🗑️</button>
-    </div>`).join('');
+      <!-- Rows (hidden by default) -->
+      <div id="\${uid}" style="display:none">
+        \${instRows}
+        <div style="padding:8px 16px;border-top:1px solid #f0f0f0;text-align:right">
+          <button onclick="openInstModal({policyNumber:'${esc(g.policyNumber)}',customerName:'${esc(g.customerName)}',licensePlate:'${esc(g.licensePlate)}',agentId:'${esc(g.agentId)}',installmentNo:\${total+1},totalInstallments:\${total+1}})"
+            style="background:#fff3e0;color:#e65100;border:1px solid #ffe0b2;border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600">
+            ➕ เพิ่มงวด
+          </button>
+        </div>
+      </div>
+    </div>\`;
+  }).join('');
+}
+function toggleInstGroup(uid) {
+  const el   = document.getElementById(uid);
+  const icon = document.getElementById(uid+'-icon');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display   = open ? 'none' : '';
+  if (icon) icon.style.transform = open ? '' : 'rotate(180deg)';
 }
 function openInstModal(r) {
   const editing = !!r;
