@@ -214,11 +214,14 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
 
   <!-- Nav Tabs -->
   <div class="nav-tabs">
-    <button class="ntab active" id="ntab-today"      onclick="switchAdminTab('today')">📅 วันนี้</button>
-    <button class="ntab"        id="ntab-customers" onclick="switchAdminTab('customers')">👥 ลูกค้า</button>
+    <button class="ntab active" id="ntab-today"        onclick="switchAdminTab('today')">📅 วันนี้</button>
+    <button class="ntab"        id="ntab-customers"    onclick="switchAdminTab('customers')">👥 ลูกค้า</button>
+    <button class="ntab"        id="ntab-installments" onclick="switchAdminTab('installments')">📋 งวด</button>
+    <button class="ntab"        id="ntab-policies"     onclick="switchAdminTab('policies')">🛡️ กธ.</button>
     <button class="ntab" id="ntab-slips" onclick="switchAdminTab('slips')">📎 สลิป <span class="ntab-badge" id="slipBadge" style="display:none">0</span></button>
-    <button class="ntab" id="ntab-agents" onclick="switchAdminTab('agents')">🤝 ตัวแทน</button>
-    <button class="ntab" id="ntab-export" onclick="switchAdminTab('export')">📥 Export</button>
+    <button class="ntab"        id="ntab-agents"       onclick="switchAdminTab('agents')">🤝 ตัวแทน</button>
+    <button class="ntab"        id="ntab-insurers"     onclick="switchAdminTab('insurers')">🏢 บ.ประกัน</button>
+    <button class="ntab"        id="ntab-export"       onclick="switchAdminTab('export')">📥 Export</button>
   </div>
 
   <!-- ── วันนี้ Daily Update ── -->
@@ -253,6 +256,80 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
 
   <div id="card-area" class="cust-grid"></div>
   </div><!-- /section-customers -->
+
+  <!-- ── งวดชำระ ── -->
+  <div id="section-installments" style="display:none">
+    <div style="padding:16px;max-width:900px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:15px;font-weight:700">📋 งวดชำระทั้งหมด</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div style="position:relative">
+            <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#aaa">🔍</span>
+            <input id="inst-search" type="text" placeholder="ค้นหาชื่อ, ทะเบียน, เลขกธ...."
+              style="padding:8px 10px 8px 30px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:200px;outline:none"
+              oninput="renderInstallments()"/>
+          </div>
+          <select id="inst-filter-status" onchange="renderInstallments()"
+            style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;font-family:inherit">
+            <option value="">สถานะทั้งหมด</option>
+            <option value="รอชำระ">รอชำระ</option>
+            <option value="รอยืนยัน">รอยืนยัน</option>
+            <option value="ชำระแล้ว">ชำระแล้ว</option>
+            <option value="ค้างชำระ">ค้างชำระ</option>
+            <option value="ยกเลิก">ยกเลิก</option>
+          </select>
+          <button onclick="openInstModal()"
+            style="padding:9px 16px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">➕ เพิ่มงวด</button>
+        </div>
+      </div>
+      <div id="inst-list"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+
+  <!-- ── กรมธรรม์ ── -->
+  <div id="section-policies" style="display:none">
+    <div style="padding:16px;max-width:900px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:15px;font-weight:700">🛡️ กรมธรรม์ทั้งหมด</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div style="position:relative">
+            <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#aaa">🔍</span>
+            <input id="pol-search" type="text" placeholder="ค้นหาชื่อ, ทะเบียน, เลขกธ., ตัวแทน..."
+              style="padding:8px 10px 8px 30px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:220px;outline:none"
+              oninput="renderAdminPolicies()"/>
+          </div>
+          <select id="pol-filter-agent" onchange="renderAdminPolicies()"
+            style="padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;outline:none;font-family:inherit">
+            <option value="">ตัวแทนทั้งหมด</option>
+          </select>
+          <button onclick="openAddPolicyModal()"
+            style="padding:9px 16px;background:var(--orange);color:#fff;border:none;border-radius:8px;
+                   font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">➕ เพิ่มกรมธรรม์</button>
+        </div>
+      </div>
+      <div id="admin-policy-list"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    </div>
+  </div>
+
+  <!-- ── บริษัทประกัน ── -->
+  <div id="section-insurers" style="display:none">
+    <div style="padding:16px;max-width:800px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:15px;font-weight:700">🏢 บริษัทประกันภัย</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div style="position:relative">
+            <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#aaa">🔍</span>
+            <input id="ins-search" type="text" placeholder="ค้นหาชื่อบริษัท..."
+              style="padding:8px 10px 8px 30px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;width:180px;outline:none"
+              oninput="renderInsurers()"/>
+          </div>
+          <button onclick="openInsurerModal()"
+            style="padding:9px 16px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">➕ เพิ่มบริษัท</button>
+        </div>
+      </div>
+      <div id="ins-list"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+    </div>
+  </div>
 
   <!-- ── สลิป ── -->
   <div id="section-slips" style="display:none">
@@ -447,6 +524,225 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
 
 <div class="toast" id="toast"></div>
 
+
+<!-- ════ MODAL: แก้ไขตัวแทน ════ -->
+<div class="modal-overlay" id="modal-edit-agent" style="display:none">
+  <div class="modal-box">
+    <div class="modal-head"><div class="modal-title">✏️ แก้ไขข้อมูลตัวแทน</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-agent')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-agent-id">
+      <label class="modal-label">ชื่อตัวแทน</label>
+      <input class="modal-input" id="edit-agent-name" placeholder="ชื่อ-นามสกุล">
+      <label class="modal-label">เบอร์โทร</label>
+      <input class="modal-input" id="edit-agent-phone" type="tel">
+      <label class="modal-label">LINE User ID</label>
+      <input class="modal-input" id="edit-agent-lineid" placeholder="Uxxxxxxx">
+      <label class="modal-label">รหัสผ่านใหม่ (token) เว้นว่างไว้ = ไม่เปลี่ยน</label>
+      <input class="modal-input" id="edit-agent-token" placeholder="ว่าง = ไม่เปลี่ยน">
+      <label class="modal-label">สถานะ</label>
+      <select class="modal-input" id="edit-agent-status" style="font-family:inherit">
+        <option value="active">ใช้งาน</option><option value="inactive">ระงับ</option>
+      </select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-agent')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="confirmEditAgent()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: งวดชำระ ════ -->
+<div class="modal-overlay" id="modal-installment" style="display:none;align-items:flex-start;padding-top:20px">
+  <div class="modal-box" style="max-width:480px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="modal-head">
+      <div class="modal-title" id="inst-modal-title">➕ เพิ่มงวดชำระ</div>
+      <button class="modal-close" onclick="closeModal('modal-installment')">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <input type="hidden" id="inst-row-index">
+      <label class="modal-label">เลขกรมธรรม์ <span style="color:var(--red)">*</span></label>
+      <input class="modal-input" id="inst-policyNumber" placeholder="เช่น 2025-P1234-VPP">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">ชื่อลูกค้า</label>
+          <input class="modal-input" id="inst-customerName" placeholder="ชื่อ-นามสกุล"></div>
+        <div><label class="modal-label">ทะเบียนรถ</label>
+          <input class="modal-input" id="inst-licensePlate" placeholder="กข 1234" oninput="this.value=this.value.toUpperCase()"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">งวดที่ *</label>
+          <input class="modal-input" id="inst-installmentNo" type="number" min="1" placeholder="1"></div>
+        <div><label class="modal-label">จำนวนงวดทั้งหมด</label>
+          <input class="modal-input" id="inst-total" type="number" min="1" placeholder="12"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">วันครบกำหนด *</label>
+          <input class="modal-input" id="inst-dueDate" type="date"></div>
+        <div><label class="modal-label">ยอดชำระ (บาท) *</label>
+          <input class="modal-input" id="inst-amount" type="number" min="0" placeholder="0"></div>
+      </div>
+      <label class="modal-label">สถานะ</label>
+      <select class="modal-input" id="inst-status" style="font-family:inherit">
+        <option>รอชำระ</option><option>รอยืนยัน</option>
+        <option>ชำระแล้ว</option><option>ค้างชำระ</option><option>ยกเลิก</option>
+      </select>
+      <label class="modal-label">รหัสตัวแทน</label>
+      <input class="modal-input" id="inst-agentId" placeholder="AG001">
+    </div>
+    <div class="modal-foot" style="border-top:1px solid var(--border);padding-top:16px">
+      <button class="btn-cancel" onclick="closeModal('modal-installment')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="confirmSaveInst()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: บริษัทประกัน ════ -->
+<div class="modal-overlay" id="modal-insurer" style="display:none;align-items:flex-start;padding-top:20px">
+  <div class="modal-box" style="max-width:480px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="modal-head">
+      <div class="modal-title">🏢 เพิ่ม/แก้ไขบริษัทประกัน</div>
+      <button class="modal-close" onclick="closeModal('modal-insurer')">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <input type="hidden" id="ins-editing-row">
+      <label class="modal-label">ชื่อบริษัท <span style="color:var(--red)">*</span></label>
+      <input class="modal-input" id="ins-name" placeholder="เช่น AXA ประกันภัย">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">เบอร์แจ้งเคลม</label>
+          <input class="modal-input" id="ins-phone" type="tel"></div>
+        <div><label class="modal-label">เบอร์สำรอง</label>
+          <input class="modal-input" id="ins-hotline" type="tel"></div>
+      </div>
+      <label class="modal-label">เบอร์ Roadside Assistance</label>
+      <input class="modal-input" id="ins-roadside" type="tel">
+      <label class="modal-label">เว็บไซต์</label>
+      <input class="modal-input" id="ins-website" type="url" placeholder="https://...">
+      <label class="modal-label">อัตราค่าคอม (%)</label>
+      <input class="modal-input" id="ins-commRate" type="number" min="0" max="100" step="0.1" placeholder="15">
+      <label class="modal-label">หมายเหตุ</label>
+      <input class="modal-input" id="ins-note" placeholder="หมายเหตุ">
+    </div>
+    <div class="modal-foot" style="border-top:1px solid var(--border);padding-top:16px">
+      <button class="btn-cancel" onclick="closeModal('modal-insurer')">ยกเลิก</button>
+      <button class="btn-confirm" onclick="confirmSaveInsurer()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL: กรมธรรม์ ════ -->
+<div class="modal-overlay" id="modal-policy" style="display:none;align-items:flex-start;padding-top:20px">
+  <div class="modal-box" style="max-width:560px;max-height:92vh;display:flex;flex-direction:column">
+    <div class="modal-head">
+      <div class="modal-title">🛡️ เพิ่มกรมธรรม์ใหม่</div>
+      <button class="modal-close" onclick="closeModal('modal-policy')">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+      <input type="hidden" id="pol-editing-pno">
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">📋 ข้อมูลกรมธรรม์</div>
+      <label class="modal-label">เลขกรมธรรม์ *</label>
+      <input class="modal-input" id="pol-policyNumber" placeholder="เช่น 2025-P1234-VPP">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">ประเภทประกัน</label>
+          <select class="modal-input" id="pol-policyType" style="font-family:inherit">
+            <option value="">-- เลือก --</option>
+            <option>ชั้น 1</option><option>ชั้น 2+</option><option>ชั้น 2</option>
+            <option>ชั้น 3+</option><option>ชั้น 3</option><option>พ.ร.บ. เท่านั้น</option>
+          </select></div>
+        <div><label class="modal-label">มี พ.ร.บ. ด้วย</label>
+          <select class="modal-input" id="pol-hasCompulsory" style="font-family:inherit">
+            <option value="">ไม่ระบุ</option><option value="✓ มี">✓ มี</option><option value="- ไม่มี">- ไม่มี</option>
+          </select></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">วันเริ่มคุ้มครอง</label>
+          <input class="modal-input" id="pol-startDate" type="date"></div>
+        <div><label class="modal-label">วันหมดอายุ</label>
+          <input class="modal-input" id="pol-expiryDate" type="date"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">ประเภทการชำระ</label>
+          <select class="modal-input" id="pol-paymentType" style="font-family:inherit" onchange="toggleInstallmentSection()">
+            <option value="">-- เลือก --</option><option>ผ่อน</option><option>จ่ายเต็ม</option>
+          </select></div>
+        <div><label class="modal-label">สถานะ</label>
+          <select class="modal-input" id="pol-status" style="font-family:inherit">
+            <option value="active">active (ใช้งาน)</option><option value="หมดอายุ">หมดอายุ</option>
+            <option value="ต่ออายุแล้ว">ต่ออายุแล้ว</option><option value="ยกเลิก">ยกเลิก</option>
+          </select></div>
+      </div>
+      <!-- installment section -->
+      <div id="pol-installment-section" style="display:none;background:#fff8f0;border:1.5px solid #ffe0b2;border-radius:10px;padding:12px;margin-top:4px">
+        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 ตั้งค่างวดผ่อนชำระ</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label class="modal-label">จำนวนงวด *</label>
+            <input class="modal-input" id="pol-installmentCount" type="number" min="1" max="120" placeholder="12" oninput="calcInstallmentAmount()"></div>
+          <div><label class="modal-label">ยอดต่องวด (บาท)</label>
+            <input class="modal-input" id="pol-installmentAmount" type="number" min="0" placeholder="คำนวณอัตโนมัติ"></div>
+        </div>
+        <label class="modal-label">วันครบกำหนดงวดแรก *</label>
+        <input class="modal-input" id="pol-firstDueDate" type="date">
+        <div id="pol-installment-preview" style="font-size:11px;color:#666;margin-top:6px;padding:5px 10px;background:#fff3e0;border-radius:6px;display:none"></div>
+      </div>
+      <label class="modal-label">ตัวแทนที่ดูแล</label>
+      <select class="modal-input" id="pol-agentId" style="font-family:inherit"><option value="">-- ไม่ระบุ --</option></select>
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">👤 ผู้เอาประกัน</div>
+      <label class="modal-label">ชื่อลูกค้า *</label>
+      <input class="modal-input" id="pol-customerName" placeholder="ชื่อ-นามสกุล">
+      <label class="modal-label">ที่อยู่</label>
+      <textarea class="modal-input" id="pol-address" placeholder="ที่อยู่ผู้เอาประกัน" style="min-height:56px;resize:vertical"></textarea>
+      <label class="modal-label">เบอร์โทร</label>
+      <input class="modal-input" id="pol-customerPhone" type="tel" placeholder="08x-xxx-xxxx">
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">🚗 ข้อมูลตัวรถ</div>
+      <label class="modal-label">ทะเบียนรถ</label>
+      <input class="modal-input" id="pol-licensePlate" placeholder="กข 1234" oninput="this.value=this.value.toUpperCase()">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">รหัสรถ/เลขตัวถัง</label>
+          <input class="modal-input" id="pol-vehicleCode" placeholder="เลขตัวถัง"></div>
+        <div><label class="modal-label">ปีจดทะเบียน</label>
+          <input class="modal-input" id="pol-vehicleYear" type="number" min="1990" max="2100" placeholder="2022"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">ยี่ห้อ</label><input class="modal-input" id="pol-vehicleBrand" placeholder="Toyota"></div>
+        <div><label class="modal-label">รุ่น</label><input class="modal-input" id="pol-vehicleModel" placeholder="Yaris Ativ"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">💰 เบี้ยประกัน</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div><label class="modal-label">เบี้ยสุทธิ (บาท)</label>
+          <input class="modal-input" id="pol-netPremium" type="number" min="0" placeholder="0" oninput="calcInstallmentAmount()"></div>
+        <div><label class="modal-label">เบี้ยรวม (บาท)</label>
+          <input class="modal-input" id="pol-grossPremium" type="number" min="0" placeholder="0"></div>
+        <div><label class="modal-label">เบี้ยฐาน (เดิม)</label>
+          <input class="modal-input" id="pol-premium" type="number" min="0" placeholder="0"></div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">🏢 บริษัทประกัน</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">ชื่อบริษัท</label>
+          <input class="modal-input" id="pol-insurer" placeholder="AXA ประกันภัย"></div>
+        <div><label class="modal-label">เบอร์แจ้งเคลม</label>
+          <input class="modal-input" id="pol-insurerPhone" type="tel"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label class="modal-label">ประเภทอู่</label>
+          <select class="modal-input" id="pol-garageType" style="font-family:inherit">
+            <option value="">ไม่ระบุ</option><option>ซ่อมห้าง</option><option>ซ่อมอู่</option><option>เลือกได้</option>
+          </select></div>
+        <div><label class="modal-label">บริการฉุกเฉิน</label>
+          <select class="modal-input" id="pol-roadsideAvail" style="font-family:inherit">
+            <option value="">ไม่ระบุ</option><option>มี</option><option>ไม่มี</option>
+          </select></div>
+      </div>
+      <label class="modal-label">เบอร์ฉุกเฉิน</label>
+      <input class="modal-input" id="pol-roadsidePhone" type="tel">
+      <label class="modal-label">เงื่อนไขบริการฉุกเฉิน</label>
+      <input class="modal-input" id="pol-roadsideCond" placeholder="ไม่เกิน 3 ครั้ง/ปี">
+    </div>
+    <div class="modal-foot" style="border-top:1px solid var(--border);padding-top:16px">
+      <button class="btn-cancel" onclick="closeModal('modal-policy')">ยกเลิก</button>
+      <button class="btn-confirm" id="pol-submit-btn" onclick="confirmAddPolicy()">💾 บันทึกกรมธรรม์</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══════════════════════════════════════════
 //  STATE
@@ -456,6 +752,9 @@ let TOKEN   = localStorage.getItem('isara_token')   || '';
 let allData = [];
 let allSlips = [];
 let allAgents = [];
+let allPolicies = [];
+let allInstallments = [];
+let allInsurers = [];
 let currentFilter = 'all';
 let currentSlipFilter = 'all';
 let activeModal = { plate:'', userId:'' };
@@ -753,12 +1052,15 @@ function closeModal(id) {
 //  NAV TABS
 // ══════════════════════════════════════════
 function switchAdminTab(name) {
-  ['today','customers','slips','agents','export'].forEach(t => {
+  ['today','customers','installments','policies','slips','agents','insurers','export'].forEach(t => {
     document.getElementById('section-'+t).style.display = t===name ? '' : 'none';
     document.getElementById('ntab-'+t).classList.toggle('active', t===name);
   });
-  if (name === 'slips'  && allSlips.length  === 0) loadSlips();
-  if (name === 'agents' && allAgents.length === 0) loadAgents();
+  if (name === 'slips'        && allSlips.length        === 0) loadSlips();
+  if (name === 'agents'       && allAgents.length       === 0) loadAgents();
+  if (name === 'policies'     && allPolicies.length     === 0) loadPolicies();
+  if (name === 'installments' && allInstallments.length === 0) loadInstallments();
+  if (name === 'insurers'     && allInsurers.length     === 0) loadInsurers();
   if (name === 'today') loadDailyUpdate();
 }
 
@@ -1022,160 +1324,410 @@ async function confirmRejectSlip() {
 function renderAgents() {
   if (!allAgents.length) {
     document.getElementById('agent-list').innerHTML =
-      '<div class="empty-state"><div class="empty-icon">🤝</div>ยังไม่มีตัวแทน กดปุ่มด้านบนเพื่อเพิ่ม</div>';
+      '<div class="empty-state"><div class="empty-icon">🤝</div>ยังไม่มีตัวแทน</div>';
     return;
   }
-  // สร้าง map: agentId → customers ที่ดูแล (จาก allData)
   const agentCustMap = {};
   allData.forEach(c => {
     const agId = c.agentId || (c.installments&&c.installments[0]&&c.installments[0].agentId) || '';
     if (!agId) return;
     if (!agentCustMap[agId]) agentCustMap[agId] = [];
-    const overdue = (c.installments||[]).filter(i=>i.overdue).length;
-    const pending = (c.installments||[]).filter(i=>i.status!=='ชำระแล้ว').length;
-    agentCustMap[agId].push({ name: c.name||c.profile?.displayName||'—',
-      plates: (c.plates||[]).join(', '), overdue, pending, registered: c.registered });
+    agentCustMap[agId].push({ name: c.name||'—', plates: (c.plates||[]).join(', '),
+      overdue: (c.installments||[]).filter(i=>i.overdue).length, registered: c.registered });
   });
-
   document.getElementById('agent-list').innerHTML = allAgents.map(a => {
     const custs = agentCustMap[a.agentId] || [];
     const overdueCount = custs.reduce((s,c)=>s+c.overdue,0);
-    const custRows = custs.slice(0,20).map((c,i) => `
-      <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;
-                  ${i>0?'border-top:1px solid #f5f5f5':''}">
+    return `<div class="agent-card" style="flex-direction:column;align-items:stretch;padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer"
+           onclick="toggleAgentCusts('ac-${esc(a.agentId)}')">
+        <div style="width:36px;height:36px;border-radius:50%;background:#e3f2fd;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🤝</div>
         <div style="flex:1">
-          <div style="font-size:12px;font-weight:600">${esc(c.name)}</div>
-          <div style="font-size:11px;color:#888">${c.plates?'🚗 '+esc(c.plates):''}</div>
-        </div>
-        <div style="font-size:11px;text-align:right">
-          ${c.overdue>0?`<span style="background:#fee2e2;color:#b91c1c;padding:2px 7px;border-radius:8px;font-weight:700">⚠️ ${c.overdue}</span>`:''}
-          ${!c.registered?`<span style="background:#f5f5f5;color:#999;padding:2px 7px;border-radius:8px;font-size:10px">ไม่มี LINE</span>`:''}
-        </div>
-      </div>`).join('');
-    const moreCount = custs.length > 20 ? custs.length - 20 : 0;
-
-    return `
-    <div class="agent-card" style="flex-direction:column;align-items:stretch;padding:0;overflow:hidden">
-      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer"
-           onclick="toggleAgentCusts('ac-${a.agentId}')">
-        <div class="agent-ic">🤝</div>
-        <div style="flex:1">
-          <div class="agent-name">${esc(a.name)}</div>
+          <div style="font-size:14px;font-weight:700">${esc(a.name)}</div>
           <div class="agent-sub">${a.phone?'📞 '+esc(a.phone)+' · ':''}ID: ${esc(a.agentId)}</div>
         </div>
-        <div style="text-align:right;font-size:12px;margin-right:6px">
-          <div style="font-weight:700;color:#1565c0">${custs.length} ลูกค้า</div>
-          ${overdueCount>0?`<div style="color:#c62828;font-size:11px">⚠️ ${overdueCount} ค้าง</div>`:''}
-        </div>
         <span class="agent-status ${a.status==='active'?'as-active':'as-inactive'}">${a.status==='active'?'ใช้งาน':'ระงับ'}</span>
-        <span style="color:#aaa;font-size:12px">▼</span>
+        <button onclick="event.stopPropagation();openEditAgentModal(${JSON.stringify(a).replace(/</g,'&lt;')})"
+          style="background:#e3f2fd;color:#1565c0;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">✏️</button>
+        <button onclick="event.stopPropagation();confirmDeleteAgent('${esc(a.agentId)}','${esc(a.name)}')"
+          style="background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">🗑️</button>
       </div>
-      <div id="ac-${a.agentId}" style="display:none;border-top:1px solid #f0f0f0;background:#fafafa">
-        ${custs.length===0
-          ? '<div style="padding:12px 14px;font-size:12px;color:#aaa">ยังไม่มีลูกค้าในระบบ</div>'
-          : custRows + (moreCount>0?`<div style="padding:8px 14px;font-size:11px;color:#888">... และอีก ${moreCount} ราย</div>`:'')}
-      </div>
+      <div id="ac-${esc(a.agentId)}" style="display:none;border-top:1px solid #f0f0f0;background:#fafafa">
+        ${custs.length ? custs.slice(0,20).map(c=>`<div style="padding:6px 16px;font-size:12px;border-bottom:1px solid #f5f5f5">
+          <b>${esc(c.name)}</b> ${c.plates?'<span style="color:#888">🚗 '+esc(c.plates)+'</span>':''}
+          ${c.overdue>0?`<span style="color:#b91c1c;margin-left:6px">⚠️ ${c.overdue}</span>`:''}
+        </div>`).join('')+'</div>' : '<div style="padding:8px 16px;font-size:12px;color:#aaa">ยังไม่มีลูกค้า</div></div>'}
     </div>`;
   }).join('');
 }
-
 function toggleAgentCusts(id) {
   const el = document.getElementById(id);
-  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+function openEditAgentModal(a) {
+  document.getElementById('edit-agent-id').value    = a.agentId;
+  document.getElementById('edit-agent-name').value  = a.name  || '';
+  document.getElementById('edit-agent-phone').value = a.phone || '';
+  document.getElementById('edit-agent-lineid').value= a.lineId|| '';
+  document.getElementById('edit-agent-token').value = '';
+  document.getElementById('edit-agent-status').value= a.status||'active';
+  document.getElementById('modal-edit-agent').style.display = 'flex';
+}
+async function confirmEditAgent() {
+  const agentId = document.getElementById('edit-agent-id').value;
+  const d = {
+    agentId,
+    name:   document.getElementById('edit-agent-name').value.trim(),
+    phone:  document.getElementById('edit-agent-phone').value.trim(),
+    lineId: document.getElementById('edit-agent-lineid').value.trim(),
+    token:  document.getElementById('edit-agent-token').value.trim(),
+    status: document.getElementById('edit-agent-status').value,
+  };
+  const res = await apiGet('updateAgent', { data: encodeURIComponent(JSON.stringify(d)) });
+  if (res?.success) { showToast('✅ อัปเดตตัวแทนแล้ว'); closeModal('modal-edit-agent'); loadAgents(); }
+  else showToast('❌ ' + (res?.message||'เกิดข้อผิดพลาด'));
+}
+async function confirmDeleteAgent(agentId, name) {
+  if (!confirm('ระงับตัวแทน '+name+' ?')) return;
+  const res = await apiGet('deleteAgent', { data: encodeURIComponent(JSON.stringify({ agentId })) });
+  if (res?.success) { showToast('✅ ระงับตัวแทนแล้ว'); loadAgents(); }
+  else showToast('❌ ' + (res?.message||'เกิดข้อผิดพลาด'));
 }
 
-function openCreateAgentModal() {
-  ['agent-name','agent-phone','agent-lineid','agent-token'].forEach(id => {
-    document.getElementById(id).value = '';
+// ══════════════════════════════════════════
+//  INSTALLMENTS
+// ══════════════════════════════════════════
+async function loadInstallments() {
+  document.getElementById('inst-list').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  const res = await apiGet('getInstallmentsAdmin');
+  if (!res || !res.success) {
+    document.getElementById('inst-list').innerHTML = '<div class="empty-state">⚠️ โหลดไม่ได้</div>';
+    return;
+  }
+  allInstallments = res.installments || [];
+  renderInstallments();
+}
+function renderInstallments() {
+  const q   = (document.getElementById('inst-search')?.value||'').toLowerCase();
+  const st  = document.getElementById('inst-filter-status')?.value||'';
+  const list = allInstallments.filter(r => {
+    if (st && r.status !== st) return false;
+    if (q) {
+      const hay = [r.policyNumber,r.customerName,r.licensePlate,r.agentId].join(' ').toLowerCase();
+      return hay.includes(q);
+    }
+    return true;
   });
-  document.getElementById('modal-agent').style.display = 'flex';
+  if (!list.length) { document.getElementById('inst-list').innerHTML='<div class="empty-state">ไม่พบข้อมูล</div>'; return; }
+  const statusColor = { 'รอชำระ':'#e3f2fd','รอยืนยัน':'#fff9c4','ชำระแล้ว':'#e8f5e9','ค้างชำระ':'#ffcdd2','ยกเลิก':'#f5f5f5' };
+  document.getElementById('inst-list').innerHTML = list.map(r => `
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">${esc(r.customerName)} <span style="color:#888;font-weight:400">· ${esc(r.licensePlate)}</span></div>
+        <div style="font-size:11px;color:#666;margin-top:2px">${esc(r.policyNumber)} งวดที่ ${r.installmentNo}/${r.totalInstallments} · ฿${fmt(r.amount)} · ครบ ${esc(r.dueDate)}</div>
+      </div>
+      <span style="background:${statusColor[r.status]||'#f5f5f5'};padding:3px 10px;border-radius:8px;font-size:12px;font-weight:600">${esc(r.status)}</span>
+      <button onclick="openEditInstModal(${JSON.stringify(r).replace(/</g,'&lt;')})"
+        style="background:#e3f2fd;color:#1565c0;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">✏️</button>
+      <button onclick="deleteInst(${r.rowIndex})"
+        style="background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">🗑️</button>
+    </div>`).join('');
+}
+function openInstModal(r) {
+  const editing = !!r;
+  document.getElementById('inst-modal-title').textContent = editing ? '✏️ แก้ไขงวด' : '➕ เพิ่มงวดชำระ';
+  document.getElementById('inst-row-index').value        = r?.rowIndex||'';
+  document.getElementById('inst-policyNumber').value     = r?.policyNumber||'';
+  document.getElementById('inst-policyNumber').readOnly  = editing;
+  document.getElementById('inst-customerName').value     = r?.customerName||'';
+  document.getElementById('inst-installmentNo').value    = r?.installmentNo||'';
+  document.getElementById('inst-total').value            = r?.totalInstallments||'';
+  document.getElementById('inst-dueDate').value          = r?.dueDate||'';
+  document.getElementById('inst-amount').value           = r?.amount||'';
+  document.getElementById('inst-status').value           = r?.status||'รอชำระ';
+  document.getElementById('inst-licensePlate').value     = r?.licensePlate||'';
+  document.getElementById('inst-agentId').value          = r?.agentId||'';
+  document.getElementById('modal-installment').style.display = 'flex';
+}
+function openEditInstModal(r) { openInstModal(r); }
+async function confirmSaveInst() {
+  const rowIndex = document.getElementById('inst-row-index').value;
+  const d = {
+    rowIndex:         rowIndex ? Number(rowIndex) : undefined,
+    policyNumber:     document.getElementById('inst-policyNumber').value.trim(),
+    customerName:     document.getElementById('inst-customerName').value.trim(),
+    installmentNo:    Number(document.getElementById('inst-installmentNo').value)||1,
+    totalInstallments:Number(document.getElementById('inst-total').value)||1,
+    dueDate:          document.getElementById('inst-dueDate').value,
+    amount:           Number(document.getElementById('inst-amount').value)||0,
+    status:           document.getElementById('inst-status').value,
+    licensePlate:     document.getElementById('inst-licensePlate').value.trim(),
+    agentId:          document.getElementById('inst-agentId').value.trim(),
+  };
+  if (!d.policyNumber) { showToast('กรุณากรอกเลขกรมธรรม์'); return; }
+  const action = rowIndex ? 'updateInstallment' : 'addInstallment';
+  const res = await apiGet(action, { data: encodeURIComponent(JSON.stringify(d)) });
+  if (res?.success) { showToast('✅ '+res.message); closeModal('modal-installment'); loadInstallments(); }
+  else showToast('❌ '+(res?.message||'เกิดข้อผิดพลาด'));
+}
+async function deleteInst(rowIndex) {
+  if (!confirm('ลบงวดนี้?')) return;
+  const res = await apiGet('deleteInstallment', { data: encodeURIComponent(JSON.stringify({ rowIndex })) });
+  if (res?.success) { showToast('✅ ลบแล้ว'); loadInstallments(); }
+  else showToast('❌ '+(res?.message||'เกิดข้อผิดพลาด'));
 }
 
-async function confirmCreateAgent() {
-  const name   = document.getElementById('agent-name').value.trim();
-  const phone  = document.getElementById('agent-phone').value.trim();
-  const lineId = document.getElementById('agent-lineid').value.trim();
-  const token  = document.getElementById('agent-token').value.trim();
-  if (!name || !token) { showToast('กรุณากรอกชื่อและรหัสผ่าน'); return; }
-  const data = encodeURIComponent(JSON.stringify({ name, phone, lineId, token }));
-  const res  = await apiGet('createAgent', { data });
+// ══════════════════════════════════════════
+//  POLICIES
+// ══════════════════════════════════════════
+async function loadPolicies() {
+  document.getElementById('admin-policy-list').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  const res = await apiGet('getPolicies');
+  if (!res || !res.success) {
+    document.getElementById('admin-policy-list').innerHTML = '<div class="empty-state">⚠️ โหลดข้อมูลกรมธรรม์ไม่ได้</div>';
+    return;
+  }
+  allPolicies = res.policies || [];
+  const agentSet = new Set(allPolicies.map(p => p.agentId).filter(Boolean));
+  const sel = document.getElementById('pol-filter-agent');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">ตัวแทนทั้งหมด</option>' +
+    [...agentSet].map(id => {
+      const name = (allPolicies.find(p=>p.agentId===id)||{}).agentName||id;
+      return `<option value="${esc(id)}"${id===cur?' selected':''}>${esc(name)} (${esc(id)})</option>`;
+    }).join('');
+  renderAdminPolicies();
+}
+function renderAdminPolicies() {
+  const q   = (document.getElementById('pol-search')?.value||'').toLowerCase();
+  const ag  = document.getElementById('pol-filter-agent')?.value||'';
+  const list = allPolicies.filter(p => {
+    if (ag && p.agentId !== ag) return false;
+    if (q) {
+      const hay = [p.policyNumber,p.customerName,p.licensePlate,p.agentId,p.agentName,p.insurer].join(' ').toLowerCase();
+      return hay.includes(q);
+    }
+    return true;
+  });
+  if (!list.length) { document.getElementById('admin-policy-list').innerHTML='<div class="empty-state">ไม่พบกรมธรรม์</div>'; return; }
+  const statusColor = { 'active':'#e8f5e9','หมดอายุ':'#ffcdd2','ต่ออายุแล้ว':'#e3f2fd','ยกเลิก':'#f5f5f5' };
+  document.getElementById('admin-policy-list').innerHTML = list.map(p => `
+    <div style="background:#fff;border:1px solid #eee;border-radius:12px;padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700">${esc(p.customerName)} <span style="color:#888;font-size:12px">🚗 ${esc(p.licensePlate)}</span></div>
+          <div style="font-size:11px;color:#555;margin-top:3px">${esc(p.policyNumber)} · ${esc(p.policyType)} · ${esc(p.insurer)}</div>
+          <div style="font-size:11px;color:#777;margin-top:2px">หมดอายุ: ${esc(p.expiryDate)} ${p.daysLeft!==null?(p.daysLeft<0?'<span style="color:#b91c1c">ค้าง '+Math.abs(p.daysLeft)+' วัน</span>':'<span style="color:#2e7d32">อีก '+p.daysLeft+' วัน</span>'):''}
+          · เบี้ยสุทธิ: ฿${fmt(p.netPremium)} · ค่าคอม: ฿${fmt(p.commAmount)}</div>
+          ${p.agentName?`<div style="font-size:11px;color:#1565c0;margin-top:2px">🤝 ${esc(p.agentName)}</div>`:''}
+        </div>
+        <span style="background:${statusColor[p.status]||'#f5f5f5'};padding:3px 10px;border-radius:8px;font-size:11px;font-weight:600;white-space:nowrap">${esc(p.status)}</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;justify-content:flex-end">
+        ${p.docUrl?`<a href="${esc(p.docUrl)}" target="_blank" style="background:#e3f2fd;color:#1565c0;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;text-decoration:none">📄 กรมธรรม์</a>`:''}
+        <button onclick="openEditPolicyModal(${JSON.stringify(p).replace(/</g,'&lt;').replace(/"/g,'&quot;')})"
+          style="background:#e8f5e9;color:#2e7d32;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">✏️ แก้ไข</button>
+        <button onclick="deletePolicy('${esc(p.policyNumber)}')"
+          style="background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">🗑️ ยกเลิก</button>
+      </div>
+    </div>`).join('');
+}
+function openAddPolicyModal() {
+  document.getElementById('pol-submit-btn').textContent = '💾 บันทึกกรมธรรม์';
+  document.getElementById('pol-editing-pno').value = '';
+  ['pol-policyNumber','pol-customerName','pol-address','pol-customerPhone','pol-licensePlate',
+   'pol-vehicleCode','pol-vehicleBrand','pol-vehicleModel','pol-insurer','pol-insurerPhone',
+   'pol-roadsidePhone','pol-roadsideCond','pol-installmentCount','pol-firstDueDate'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value='';
+  });
+  ['pol-netPremium','pol-grossPremium','pol-premium','pol-vehicleYear','pol-installmentAmount'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('pol-paymentType').value = '';
+  document.getElementById('pol-status').value = 'active';
+  document.getElementById('pol-hasCompulsory').value = '';
+  document.getElementById('pol-garageType').value = '';
+  document.getElementById('pol-roadsideAvail').value = '';
+  const instSec = document.getElementById('pol-installment-section');
+  if (instSec) instSec.style.display = 'none';
+  // อัป dropdown ตัวแทน
+  const agSel = document.getElementById('pol-agentId');
+  agSel.innerHTML = '<option value="">-- ไม่ระบุ --</option>' +
+    allAgents.filter(a=>a.status==='active').map(a=>`<option value="${esc(a.agentId)}">${esc(a.name)}</option>`).join('');
+  document.getElementById('modal-policy').style.display = 'flex';
+}
+function openEditPolicyModal(p) {
+  openAddPolicyModal();
+  document.getElementById('pol-editing-pno').value      = p.policyNumber;
+  document.getElementById('pol-policyNumber').value     = p.policyNumber;
+  document.getElementById('pol-policyNumber').readOnly  = true;
+  document.getElementById('pol-customerName').value     = p.customerName||'';
+  document.getElementById('pol-address').value          = p.address||'';
+  document.getElementById('pol-customerPhone').value    = p.customerPhone||'';
+  document.getElementById('pol-licensePlate').value     = p.licensePlate||'';
+  document.getElementById('pol-vehicleCode').value      = p.vehicleCode||'';
+  document.getElementById('pol-vehicleBrand').value     = p.vehicleBrand||'';
+  document.getElementById('pol-vehicleModel').value     = p.vehicleModel||'';
+  document.getElementById('pol-vehicleYear').value      = p.vehicleYear||'';
+  document.getElementById('pol-netPremium').value       = p.netPremium||'';
+  document.getElementById('pol-grossPremium').value     = p.grossPremium||'';
+  document.getElementById('pol-premium').value          = p.premium||'';
+  document.getElementById('pol-insurer').value          = p.insurer||'';
+  document.getElementById('pol-insurerPhone').value     = p.insurerPhone||'';
+  document.getElementById('pol-garageType').value       = p.garageType||'';
+  document.getElementById('pol-roadsideAvail').value    = p.roadsideAvail||'';
+  document.getElementById('pol-roadsidePhone').value    = p.roadsidePhone||'';
+  document.getElementById('pol-roadsideCond').value     = p.roadsideCond||'';
+  document.getElementById('pol-policyType').value       = p.policyType||'';
+  document.getElementById('pol-hasCompulsory').value    = p.hasCompulsory||'';
+  document.getElementById('pol-startDate').value        = p.startDate||'';
+  document.getElementById('pol-expiryDate').value       = p.expiryDate||'';
+  document.getElementById('pol-paymentType').value      = p.paymentType||'';
+  document.getElementById('pol-status').value           = p.status||'active';
+  document.getElementById('pol-agentId').value          = p.agentId||'';
+  document.getElementById('pol-submit-btn').textContent = '💾 บันทึกการแก้ไข';
+}
+function toggleInstallmentSection() {
+  const pt  = document.getElementById('pol-paymentType').value;
+  const sec = document.getElementById('pol-installment-section');
+  if (sec) sec.style.display = pt === 'ผ่อน' ? '' : 'none';
+}
+function calcInstallmentAmount() {
+  const net   = Number(document.getElementById('pol-netPremium')?.value||0);
+  const count = Number(document.getElementById('pol-installmentCount')?.value||0);
+  const amtEl = document.getElementById('pol-installmentAmount');
+  const prev  = document.getElementById('pol-installment-preview');
+  if (amtEl && net > 0 && count > 0 && !amtEl.value) amtEl.placeholder = fmt(Math.round(net/count))+' (อัตโนมัติ)';
+  if (prev && count > 0) {
+    const amt = Number(amtEl?.value)||(net>0&&count>0?Math.round(net/count):0);
+    prev.style.display=''; prev.textContent=`📋 ${count} งวด × ฿${fmt(amt)} = ฿${fmt(amt*count)}`;
+  }
+}
+async function confirmAddPolicy() {
+  const editingPno = document.getElementById('pol-editing-pno').value;
+  const pno = document.getElementById('pol-policyNumber').value.trim();
+  const custName = document.getElementById('pol-customerName').value.trim();
+  const paymentType = document.getElementById('pol-paymentType').value;
+  const netPremium = Number(document.getElementById('pol-netPremium').value||0);
+  const installmentCount = Number(document.getElementById('pol-installmentCount')?.value||0);
+  const installmentAmountRaw = Number(document.getElementById('pol-installmentAmount')?.value||0);
+  const installmentAmount = installmentAmountRaw||(installmentCount>0?Math.round(netPremium/installmentCount):0);
+  const firstDueDate = document.getElementById('pol-firstDueDate')?.value||'';
+  if (!pno) { showToast('กรุณากรอกเลขกรมธรรม์'); return; }
+  if (!custName) { showToast('กรุณากรอกชื่อลูกค้า'); return; }
+  if (paymentType==='ผ่อน' && !installmentCount) { showToast('กรุณาระบุจำนวนงวด'); return; }
+  if (paymentType==='ผ่อน' && !firstDueDate) { showToast('กรุณาระบุวันครบกำหนดงวดแรก'); return; }
+  const payload = {
+    policyNumber: pno, customerName: custName,
+    agentId:      document.getElementById('pol-agentId').value,
+    licensePlate: document.getElementById('pol-licensePlate').value,
+    policyType:   document.getElementById('pol-policyType').value,
+    hasCompulsory:document.getElementById('pol-hasCompulsory').value,
+    startDate:    document.getElementById('pol-startDate').value,
+    expiryDate:   document.getElementById('pol-expiryDate').value,
+    paymentType, status: document.getElementById('pol-status').value,
+    address:      document.getElementById('pol-address').value,
+    customerPhone:document.getElementById('pol-customerPhone').value,
+    vehicleCode:  document.getElementById('pol-vehicleCode').value,
+    vehicleYear:  document.getElementById('pol-vehicleYear').value,
+    vehicleBrand: document.getElementById('pol-vehicleBrand').value,
+    vehicleModel: document.getElementById('pol-vehicleModel').value,
+    netPremium, grossPremium: Number(document.getElementById('pol-grossPremium').value||0),
+    premium:      Number(document.getElementById('pol-premium').value||0),
+    insurer:      document.getElementById('pol-insurer').value,
+    insurerPhone: document.getElementById('pol-insurerPhone').value,
+    garageType:   document.getElementById('pol-garageType').value,
+    roadsideAvail:document.getElementById('pol-roadsideAvail').value,
+    roadsidePhone:document.getElementById('pol-roadsidePhone').value,
+    roadsideCond: document.getElementById('pol-roadsideCond').value,
+    installmentCount, installmentAmount, firstDueDate,
+  };
+  document.getElementById('pol-submit-btn').disabled = true;
+  const action = editingPno ? 'updatePolicy' : 'addPolicy';
+  const res = await apiGet(action, { data: encodeURIComponent(JSON.stringify(payload)) });
+  document.getElementById('pol-submit-btn').disabled = false;
   if (res?.success) {
-    showToast('✅ ' + (res.message || 'สร้างตัวแทนแล้ว'));
-    closeModal('modal-agent');
-    loadAgents();
-  } else {
-    showToast('❌ ' + (res?.message || 'เกิดข้อผิดพลาด'));
+    showToast('✅ '+res.message);
+    closeModal('modal-policy');
+    loadPolicies();
+    if (paymentType==='ผ่อน' && res.installments) { allInstallments=[]; loadInstallments(); }
+  } else showToast('❌ '+(res?.message||'เกิดข้อผิดพลาด'));
+}
+async function deletePolicy(policyNumber) {
+  if (!confirm('ยกเลิกกรมธรรม์ '+policyNumber+' ?')) return;
+  const res = await apiGet('deletePolicy', { data: encodeURIComponent(JSON.stringify({ policyNumber })) });
+  if (res?.success) { showToast('✅ ยกเลิกกรมธรรม์แล้ว'); loadPolicies(); }
+  else showToast('❌ '+(res?.message||'เกิดข้อผิดพลาด'));
+}
+
+// ══════════════════════════════════════════
+//  INSURERS
+// ══════════════════════════════════════════
+async function loadInsurers() {
+  document.getElementById('ins-list').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  const res = await apiGet('getInsurers');
+  if (!res || !res.success) {
+    document.getElementById('ins-list').innerHTML = '<div class="empty-state">⚠️ โหลดไม่ได้</div>';
+    return;
   }
+  allInsurers = res.insurers || [];
+  renderInsurers();
+}
+function renderInsurers() {
+  const q = (document.getElementById('ins-search')?.value||'').toLowerCase();
+  const list = q ? allInsurers.filter(r => r.name.toLowerCase().includes(q)) : allInsurers;
+  if (!list.length) { document.getElementById('ins-list').innerHTML='<div class="empty-state">ไม่พบบริษัท</div>'; return; }
+  document.getElementById('ins-list').innerHTML = list.map(r => `
+    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px">
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700">🏢 ${esc(r.name)}</div>
+        <div style="font-size:11px;color:#666;margin-top:3px">
+          ${r.phone?'📞 '+esc(r.phone)+' · ':''}${r.hotline?'📞 สำรอง: '+esc(r.hotline)+' · ':''}${r.roadside?'🚨 Roadside: '+esc(r.roadside)+' · ':''}
+          ${r.commRate?'💰 คอม '+r.commRate+'%':''}
+        </div>
+      </div>
+      <button onclick="openInsurerModal(${JSON.stringify(r).replace(/</g,'&lt;').replace(/"/g,'&quot;')})"
+        style="background:#e3f2fd;color:#1565c0;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">✏️</button>
+      <button onclick="deleteInsurer(${r.rowIndex})"
+        style="background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer">🗑️</button>
+    </div>`).join('');
+}
+function openInsurerModal(r) {
+  document.getElementById('ins-editing-row').value    = r?.rowIndex||'';
+  document.getElementById('ins-name').value           = r?.name||'';
+  document.getElementById('ins-phone').value          = r?.phone||'';
+  document.getElementById('ins-hotline').value        = r?.hotline||'';
+  document.getElementById('ins-roadside').value       = r?.roadside||'';
+  document.getElementById('ins-website').value        = r?.website||'';
+  document.getElementById('ins-note').value           = r?.note||'';
+  document.getElementById('ins-commRate').value       = r?.commRate||'';
+  document.getElementById('modal-insurer').style.display = 'flex';
+}
+async function confirmSaveInsurer() {
+  const rowIndex = document.getElementById('ins-editing-row').value;
+  const d = {
+    rowIndex: rowIndex ? Number(rowIndex) : undefined,
+    name:     document.getElementById('ins-name').value.trim(),
+    phone:    document.getElementById('ins-phone').value.trim(),
+    hotline:  document.getElementById('ins-hotline').value.trim(),
+    roadside: document.getElementById('ins-roadside').value.trim(),
+    website:  document.getElementById('ins-website').value.trim(),
+    note:     document.getElementById('ins-note').value.trim(),
+    commRate: Number(document.getElementById('ins-commRate').value||0),
+  };
+  if (!d.name) { showToast('กรุณากรอกชื่อบริษัท'); return; }
+  const action = rowIndex ? 'updateInsurer' : 'addInsurer';
+  const res = await apiGet(action, { data: encodeURIComponent(JSON.stringify(d)) });
+  if (res?.success) { showToast('✅ '+res.message); closeModal('modal-insurer'); loadInsurers(); }
+  else showToast('❌ '+(res?.message||'เกิดข้อผิดพลาด'));
+}
+async function deleteInsurer(rowIndex) {
+  if (!confirm('ลบบริษัทนี้?')) return;
+  const res = await apiGet('deleteInsurer', { data: encodeURIComponent(JSON.stringify({ rowIndex })) });
+  if (res?.success) { showToast('✅ ลบแล้ว'); loadInsurers(); }
+  else showToast('❌ '+(res?.message||'เกิดข้อผิดพลาด'));
 }
 
-// ══════════════════════════════════════════
-//  ASSIGN AGENT
-// ══════════════════════════════════════════
-let assignMeta = null;
-
-function openAssignModal(meta) {
-  assignMeta = meta;
-  document.getElementById('assign-info').innerHTML =
-    `ลูกค้า: <b>${esc(meta.name)}</b><br>ทะเบียน: ${esc((meta.plates||[]).join(', '))}`;
-
-  // สร้าง options จาก allAgents
-  const sel = document.getElementById('assign-agent-select');
-  sel.innerHTML = '<option value="">-- เลือกตัวแทน --</option>' +
-    allAgents.filter(a => a.status === 'active').map(a =>
-      `<option value="${esc(a.agentId)}">${esc(a.name)}${a.phone?' ('+esc(a.phone)+')':''}</option>`
-    ).join('');
-
-  document.getElementById('modal-assign').style.display = 'flex';
-
-  // โหลดตัวแทนถ้ายังไม่มี
-  if (!allAgents.length) loadAgents().then(() => {
-    sel.innerHTML = '<option value="">-- เลือกตัวแทน --</option>' +
-      allAgents.filter(a => a.status === 'active').map(a =>
-        `<option value="${esc(a.agentId)}">${esc(a.name)}</option>`
-      ).join('');
-  });
-}
-
-async function confirmAssignAgent() {
-  const agentId = document.getElementById('assign-agent-select').value;
-  if (!agentId) { showToast('กรุณาเลือกตัวแทน'); return; }
-  const plates = assignMeta?.plates || [];
-  if (!plates.length) { showToast('ไม่พบทะเบียนรถ'); return; }
-
-  let totalUpdated = 0;
-  for (const plate of plates) {
-    const data = encodeURIComponent(JSON.stringify({ plate, agentId }));
-    const res  = await apiGet('assignAgent', { data });
-    if (res?.success) totalUpdated += (res.updated || 1);
-    else showToast('❌ ' + (res?.message || plate+' ไม่สำเร็จ'));
-  }
-  if (totalUpdated > 0) {
-    showToast(`✅ มอบหมายแล้ว ${totalUpdated} แถว`);
-    closeModal('modal-assign');
-    loadData();
-  }
-}
-
-// ══════════════════════════════════════════
-//  IMAGE VIEWER
-// ══════════════════════════════════════════
-function viewImg(url) {
-  document.getElementById('img-viewer-src').src = driveThumbUrl(url);
-  document.getElementById('img-viewer').classList.add('open');
-}
-
-// ══════════════════════════════════════════
-//  HELPERS
-// ══════════════════════════════════════════
-function fmt(n) { return Number(n||0).toLocaleString('th-TH'); }
-function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
-}
 </script>
 </body>
 </html>
