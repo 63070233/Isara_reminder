@@ -672,16 +672,37 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
       </div>
       <!-- installment section -->
       <div id="pol-installment-section" style="display:none;background:#fff8f0;border:1.5px solid #ffe0b2;border-radius:10px;padding:12px;margin-top:4px">
-        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:8px">📋 ตั้งค่างวดผ่อนชำระ</div>
+        <div style="font-size:11px;font-weight:700;color:var(--orange);margin-bottom:10px">📋 ตั้งค่างวดผ่อนชำระ</div>
+
+        <!-- รูปแบบการคำนวณ -->
+        <label class="modal-label">รูปแบบการผ่อน</label>
+        <div style="display:flex;gap:10px;margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#fff;border:1.5px solid #ffe0b2;border-radius:8px;padding:7px 12px;flex:1">
+            <input type="radio" name="pol-inst-mode" id="pol-mode-equal" value="equal" checked onchange="calcInstallmentAmount()">
+            <span>⚖️ หารเท่ากัน</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;background:#fff;border:1.5px solid #ffe0b2;border-radius:8px;padding:7px 12px;flex:1">
+            <input type="radio" name="pol-inst-mode" id="pol-mode-first" value="first_percent" onchange="calcInstallmentAmount()">
+            <span>📊 งวดแรกเป็น%</span>
+          </label>
+        </div>
+
+        <!-- % งวดแรก (แสดงเมื่อเลือก งวดแรกเป็น%) -->
+        <div id="pol-first-pct-row" style="display:none;margin-bottom:8px">
+          <label class="modal-label">% งวดแรก <span style="color:#888;font-weight:400">(เช่น 20 = งวดแรก 20% ส่วนที่เหลือหารเท่า)</span></label>
+          <input class="modal-input" id="pol-firstPercent" type="number" min="1" max="99" step="0.5" placeholder="เช่น 20" oninput="calcInstallmentAmount()">
+        </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div><label class="modal-label">จำนวนงวด *</label>
             <input class="modal-input" id="pol-installmentCount" type="number" min="1" max="120" placeholder="12" oninput="calcInstallmentAmount()"></div>
-          <div><label class="modal-label">ยอดต่องวด (บาท)</label>
-            <input class="modal-input" id="pol-installmentAmount" type="number" min="0" placeholder="คำนวณอัตโนมัติ"></div>
+          <div><label class="modal-label">วันครบกำหนดงวดแรก *</label>
+            <input class="modal-input" id="pol-firstDueDate" type="date"></div>
         </div>
-        <label class="modal-label">วันครบกำหนดงวดแรก *</label>
-        <input class="modal-input" id="pol-firstDueDate" type="date">
-        <div id="pol-installment-preview" style="font-size:11px;color:#666;margin-top:6px;padding:5px 10px;background:#fff3e0;border-radius:6px;display:none"></div>
+
+        <!-- Preview งวด -->
+        <div id="pol-installment-preview" style="display:none;margin-top:8px;background:#fff3e0;border-radius:8px;padding:8px 12px;font-size:12px;color:#555">
+        </div>
       </div>
       <label class="modal-label">ตัวแทนที่ดูแล</label>
       <select class="modal-input" id="pol-agentId" style="font-family:inherit"><option value="">-- ไม่ระบุ --</option></select>
@@ -1555,7 +1576,7 @@ function openAddPolicyModal() {
   document.getElementById('pol-editing-pno').value = '';
   ['pol-policyNumber','pol-customerName','pol-address','pol-customerPhone','pol-licensePlate',
    'pol-vehicleCode','pol-vehicleBrand','pol-vehicleModel','pol-insurer','pol-insurerPhone',
-   'pol-roadsidePhone','pol-roadsideCond','pol-installmentCount','pol-firstDueDate'].forEach(id => {
+   'pol-roadsidePhone','pol-roadsideCond','pol-installmentCount','pol-firstDueDate','pol-firstPercent'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value='';
   });
   ['pol-netPremium','pol-grossPremium','pol-premium','pol-vehicleYear','pol-installmentAmount'].forEach(id=>{
@@ -1609,17 +1630,48 @@ function toggleInstallmentSection() {
   const pt  = document.getElementById('pol-paymentType').value;
   const sec = document.getElementById('pol-installment-section');
   if (sec) sec.style.display = pt === 'ผ่อน' ? '' : 'none';
+  if (pt === 'ผ่อน') calcInstallmentAmount();
 }
 function calcInstallmentAmount() {
   const net   = Number(document.getElementById('pol-netPremium')?.value||0);
   const count = Number(document.getElementById('pol-installmentCount')?.value||0);
-  const amtEl = document.getElementById('pol-installmentAmount');
-  const prev  = document.getElementById('pol-installment-preview');
-  if (amtEl && net > 0 && count > 0 && !amtEl.value) amtEl.placeholder = fmt(Math.round(net/count))+' (อัตโนมัติ)';
-  if (prev && count > 0) {
-    const amt = Number(amtEl?.value)||(net>0&&count>0?Math.round(net/count):0);
-    prev.style.display=''; prev.textContent=`📋 ${count} งวด × ฿${fmt(amt)} = ฿${fmt(amt*count)}`;
+  const mode  = document.querySelector('input[name="pol-inst-mode"]:checked')?.value || 'equal';
+  const pctRow = document.getElementById('pol-first-pct-row');
+  const prev   = document.getElementById('pol-installment-preview');
+  if (pctRow) pctRow.style.display = mode === 'first_percent' ? '' : 'none';
+  if (!prev) return;
+  if (count < 1 || net < 1) { prev.style.display = 'none'; return; }
+
+  let rows = [];
+  if (mode === 'equal') {
+    const amt = Math.round(net / count);
+    const last = net - amt * (count - 1);
+    for (let i = 1; i <= count; i++)
+      rows.push({ no: i, amt: i === count ? last : amt });
+  } else {
+    const pct  = Number(document.getElementById('pol-firstPercent')?.value || 20);
+    const first = Math.round(net * pct / 100);
+    const rest  = count > 1 ? Math.round((net - first) / (count - 1)) : 0;
+    const lastAmt = count > 1 ? net - first - rest * (count - 2) : first;
+    for (let i = 1; i <= count; i++) {
+      if (i === 1)          rows.push({ no: 1, amt: first });
+      else if (i === count) rows.push({ no: i, amt: lastAmt });
+      else                  rows.push({ no: i, amt: rest });
+    }
   }
+
+  const total = rows.reduce((s, r) => s + r.amt, 0);
+  const show  = rows.slice(0, 4);
+  const dots  = count > 4 ? `<div style="color:#aaa;text-align:center">⋯ ${count - 4} งวดที่เหลือ</div>` : '';
+  prev.style.display = '';
+  prev.innerHTML = show.map(r =>
+    `<div style="display:flex;justify-content:space-between">
+       <span>งวดที่ ${r.no}</span>
+       <span style="font-weight:700">฿${fmt(r.amt)}</span>
+     </div>`).join('') + dots +
+    `<div style="border-top:1px solid #ffd18040;margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:700">
+       <span>รวม ${count} งวด</span><span>฿${fmt(total)}</span>
+     </div>`;
 }
 async function confirmAddPolicy() {
   const editingPno = document.getElementById('pol-editing-pno').value;
@@ -1628,9 +1680,18 @@ async function confirmAddPolicy() {
   const paymentType = document.getElementById('pol-paymentType').value;
   const netPremium = Number(document.getElementById('pol-netPremium').value||0);
   const installmentCount = Number(document.getElementById('pol-installmentCount')?.value||0);
-  const installmentAmountRaw = Number(document.getElementById('pol-installmentAmount')?.value||0);
-  const installmentAmount = installmentAmountRaw||(installmentCount>0?Math.round(netPremium/installmentCount):0);
-  const firstDueDate = document.getElementById('pol-firstDueDate')?.value||'';
+  const installmentMode  = document.querySelector('input[name="pol-inst-mode"]:checked')?.value || 'equal';
+  const firstPercent     = Number(document.getElementById('pol-firstPercent')?.value||20);
+  const firstDueDate     = document.getElementById('pol-firstDueDate')?.value||'';
+  // คำนวณ installmentAmount จาก netPremium + mode
+  let installmentAmount = 0;
+  if (paymentType === 'ผ่อน' && installmentCount > 0) {
+    if (installmentMode === 'equal') {
+      installmentAmount = Math.round(netPremium / installmentCount);
+    } else {
+      installmentAmount = Math.round(netPremium * firstPercent / 100); // งวดแรก (GAS จะคำนวณที่เหลือเอง)
+    }
+  }
   if (!pno) { showToast('กรุณากรอกเลขกรมธรรม์'); return; }
   if (!custName) { showToast('กรุณากรอกชื่อลูกค้า'); return; }
   if (paymentType==='ผ่อน' && !installmentCount) { showToast('กรุณาระบุจำนวนงวด'); return; }
@@ -1658,7 +1719,7 @@ async function confirmAddPolicy() {
     roadsideAvail:document.getElementById('pol-roadsideAvail').value,
     roadsidePhone:document.getElementById('pol-roadsidePhone').value,
     roadsideCond: document.getElementById('pol-roadsideCond').value,
-    installmentCount, installmentAmount, firstDueDate,
+    installmentCount, installmentAmount, firstDueDate, installmentMode, firstPercent,
   };
   document.getElementById('pol-submit-btn').disabled = true;
   const action = editingPno ? 'updatePolicy' : 'addPolicy';
