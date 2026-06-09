@@ -744,6 +744,24 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
 </div>
 
 <script>
+// ──────────────────────────────────────────
+//  UTILS
+// ──────────────────────────────────────────
+function fmt(n) { return Number(n||0).toLocaleString('th-TH'); }
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showToast(msg, dur) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;z-index:9999;transition:opacity .3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._t); t._t = setTimeout(() => { t.style.opacity = '0'; }, dur || 2800);
+}
+
 // ══════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════
