@@ -659,6 +659,15 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
         <div><label class="modal-label">วันหมดอายุ</label>
           <input class="modal-input" id="pol-expiryDate" type="date"></div>
       </div>
+      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">💰 เบี้ยประกัน</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div><label class="modal-label">เบี้ยสุทธิ (บาท)</label>
+          <input class="modal-input" id="pol-netPremium" type="number" min="0" placeholder="0" oninput="calcInstallmentAmount()"></div>
+        <div><label class="modal-label">เบี้ยรวม (บาท)</label>
+          <input class="modal-input" id="pol-grossPremium" type="number" min="0" placeholder="0"></div>
+        <div><label class="modal-label">เบี้ยฐาน (เดิม)</label>
+          <input class="modal-input" id="pol-premium" type="number" min="0" placeholder="0"></div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label class="modal-label">ประเภทการชำระ</label>
           <select class="modal-input" id="pol-paymentType" style="font-family:inherit" onchange="toggleInstallmentSection()">
@@ -726,15 +735,7 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
         <div><label class="modal-label">ยี่ห้อ</label><input class="modal-input" id="pol-vehicleBrand" placeholder="Toyota"></div>
         <div><label class="modal-label">รุ่น</label><input class="modal-input" id="pol-vehicleModel" placeholder="Yaris Ativ"></div>
       </div>
-      <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">💰 เบี้ยประกัน</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-        <div><label class="modal-label">เบี้ยสุทธิ (บาท)</label>
-          <input class="modal-input" id="pol-netPremium" type="number" min="0" placeholder="0" oninput="calcInstallmentAmount()"></div>
-        <div><label class="modal-label">เบี้ยรวม (บาท)</label>
-          <input class="modal-input" id="pol-grossPremium" type="number" min="0" placeholder="0"></div>
-        <div><label class="modal-label">เบี้ยฐาน (เดิม)</label>
-          <input class="modal-input" id="pol-premium" type="number" min="0" placeholder="0"></div>
-      </div>
+
       <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">🏢 บริษัทประกัน</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label class="modal-label">ชื่อบริษัท</label>
