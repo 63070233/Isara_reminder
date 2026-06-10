@@ -655,9 +655,11 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label class="modal-label">วันเริ่มคุ้มครอง</label>
-          <input class="modal-input" id="pol-startDate" type="date"></div>
+          <input class="modal-input" id="pol-startDate" type="date" onchange="beDateHint('pol-startDate','pol-startDate-hint')">
+          <span id="pol-startDate-hint" style="font-size:11px;color:var(--orange);margin-top:2px;display:block"></span></div>
         <div><label class="modal-label">วันหมดอายุ</label>
-          <input class="modal-input" id="pol-expiryDate" type="date"></div>
+          <input class="modal-input" id="pol-expiryDate" type="date" onchange="beDateHint('pol-expiryDate','pol-expiryDate-hint')">
+          <span id="pol-expiryDate-hint" style="font-size:11px;color:var(--orange);margin-top:2px;display:block"></span></div>
       </div>
       <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">💰 เบี้ยประกัน</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
@@ -665,8 +667,8 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
           <input class="modal-input" id="pol-netPremium" type="number" min="0" placeholder="0" oninput="calcInstallmentAmount()"></div>
         <div><label class="modal-label">เบี้ยรวม (บาท)</label>
           <input class="modal-input" id="pol-grossPremium" type="number" min="0" placeholder="0"></div>
-        <div><label class="modal-label">เบี้ยฐาน (เดิม)</label>
-          <input class="modal-input" id="pol-premium" type="number" min="0" placeholder="0"></div>
+        <div><label class="modal-label">เบี้ยรวมส่วนลด (บาท)</label>
+          <input class="modal-input" id="pol-premium" type="number" min="0" placeholder="0" oninput="calcInstallmentAmount()"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label class="modal-label">ประเภทการชำระ</label>
@@ -706,7 +708,8 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
           <div><label class="modal-label">จำนวนงวด *</label>
             <input class="modal-input" id="pol-installmentCount" type="number" min="1" max="120" placeholder="12" oninput="calcInstallmentAmount()"></div>
           <div><label class="modal-label">วันครบกำหนดงวดแรก *</label>
-            <input class="modal-input" id="pol-firstDueDate" type="date"></div>
+            <input class="modal-input" id="pol-firstDueDate" type="date" onchange="beDateHint('pol-firstDueDate','pol-firstDueDate-hint')">
+            <span id="pol-firstDueDate-hint" style="font-size:11px;color:var(--orange);margin-top:2px;display:block"></span></div>
         </div>
 
         <!-- Preview งวด -->
@@ -739,7 +742,9 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
       <div style="font-size:11px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px;margin:12px 0 8px;padding-bottom:5px;border-bottom:1.5px solid var(--border)">🏢 บริษัทประกัน</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><label class="modal-label">ชื่อบริษัท</label>
-          <input class="modal-input" id="pol-insurer" placeholder="AXA ประกันภัย"></div>
+          <select class="modal-input" id="pol-insurer" style="font-family:inherit" onchange="onInsurerSelect()">
+            <option value="">-- เลือกบริษัทประกัน --</option>
+          </select></div>
         <div><label class="modal-label">เบอร์แจ้งเคลม</label>
           <input class="modal-input" id="pol-insurerPhone" type="tel"></div>
       </div>
@@ -770,6 +775,19 @@ body{font-family:'Segoe UI','Noto Sans Thai',sans-serif;background:var(--gray);c
 //  UTILS
 // ──────────────────────────────────────────
 function fmt(n) { return Number(n||0).toLocaleString('th-TH'); }
+function fmtDate(d) {
+  if (!d) return '-';
+  var day, mon, year;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) { var p=d.split('-'); year=p[0]; mon=p[1]; day=p[2]; }
+  else if (/^\d{2}\/\d{2}\/\d{4}$/.test(d)) { var p=d.split('/'); day=p[0]; mon=p[1]; year=p[2]; }
+  else return d;
+  return day+'/'+mon+'/'+(Number(year)+543);
+}
+function beDateHint(inputId, spanId) {
+  var v = document.getElementById(inputId)?.value || '';
+  var el = document.getElementById(spanId);
+  if (el) el.textContent = v ? fmtDate(v) : '';
+}
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -1159,7 +1177,7 @@ async function loadDailyUpdate() {
 
     section('🔔','กธ.หมดอายุใน 7 วัน','#e53935', u.expiringIn7,
       p => row(esc(p.custName)+' '+(p.plate?'('+esc(p.plate)+')':''),
-               'หมด '+esc(p.expiryDate),
+               'หมด '+esc(fmtDate(p.expiryDate)),
                `<span style="background:#ffebee;color:#c62828;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">อีก ${p.daysLeft} วัน</span>`));
 
   document.getElementById('daily-update-content').innerHTML = html;
@@ -1633,7 +1651,7 @@ function renderAdminPolicies() {
         <div style="flex:1">
           <div style="font-size:13px;font-weight:700">${esc(p.customerName)} <span style="color:#888;font-size:12px">🚗 ${esc(p.licensePlate)}</span></div>
           <div style="font-size:11px;color:#555;margin-top:3px">${esc(p.policyNumber)} · ${esc(p.policyType)} · ${esc(p.insurer)}</div>
-          <div style="font-size:11px;color:#777;margin-top:2px">หมดอายุ: ${esc(p.expiryDate)} ${p.daysLeft!==null?(p.daysLeft<0?'<span style="color:#b91c1c">ค้าง '+Math.abs(p.daysLeft)+' วัน</span>':'<span style="color:#2e7d32">อีก '+p.daysLeft+' วัน</span>'):''}
+          <div style="font-size:11px;color:#777;margin-top:2px">หมดอายุ: ${esc(fmtDate(p.expiryDate))} ${p.daysLeft!==null?(p.daysLeft<0?'<span style="color:#b91c1c">ค้าง '+Math.abs(p.daysLeft)+' วัน</span>':'<span style="color:#2e7d32">อีก '+p.daysLeft+' วัน</span>'):''}
           · เบี้ยสุทธิ: ฿${fmt(p.netPremium)} · ค่าคอม: ฿${fmt(p.commAmount)}</div>
           ${p.agentName?`<div style="font-size:11px;color:#1565c0;margin-top:2px">🤝 ${esc(p.agentName)}</div>`:''}
         </div>
@@ -1670,6 +1688,8 @@ function openAddPolicyModal() {
   const agSel = document.getElementById('pol-agentId');
   agSel.innerHTML = '<option value="">-- ไม่ระบุ --</option>' +
     allAgents.filter(a=>a.status==='active').map(a=>`<option value="${esc(a.agentId)}">${esc(a.name)}</option>`).join('');
+  if (allInsurers.length === 0) loadInsurers().then(function(){ populateInsurerDropdown(''); });
+  else populateInsurerDropdown('');
   document.getElementById('modal-policy').style.display = 'flex';
 }
 function openEditPolicyModal(p) {
@@ -1688,7 +1708,8 @@ function openEditPolicyModal(p) {
   document.getElementById('pol-netPremium').value       = p.netPremium||'';
   document.getElementById('pol-grossPremium').value     = p.grossPremium||'';
   document.getElementById('pol-premium').value          = p.premium||'';
-  document.getElementById('pol-insurer').value          = p.insurer||'';
+  if (allInsurers.length === 0) loadInsurers().then(function(){ populateInsurerDropdown(p.insurer||''); });
+  else populateInsurerDropdown(p.insurer||'');
   document.getElementById('pol-insurerPhone').value     = p.insurerPhone||'';
   document.getElementById('pol-garageType').value       = p.garageType||'';
   document.getElementById('pol-roadsideAvail').value    = p.roadsideAvail||'';
@@ -1697,7 +1718,9 @@ function openEditPolicyModal(p) {
   document.getElementById('pol-policyType').value       = p.policyType||'';
   document.getElementById('pol-hasCompulsory').value    = p.hasCompulsory||'';
   document.getElementById('pol-startDate').value        = p.startDate||'';
+  beDateHint('pol-startDate','pol-startDate-hint');
   document.getElementById('pol-expiryDate').value       = p.expiryDate||'';
+  beDateHint('pol-expiryDate','pol-expiryDate-hint');
   document.getElementById('pol-paymentType').value      = p.paymentType||'';
   document.getElementById('pol-status').value           = p.status||'active';
   document.getElementById('pol-agentId').value          = p.agentId||'';
@@ -1709,8 +1732,38 @@ function toggleInstallmentSection() {
   if (sec) sec.style.display = pt === 'ผ่อน' ? '' : 'none';
   if (pt === 'ผ่อน') calcInstallmentAmount();
 }
+function populateInsurerDropdown(selectedName) {
+  var sel = document.getElementById('pol-insurer');
+  if (!sel) return;
+  var prev = selectedName || sel.value || '';
+  sel.innerHTML = '<option value="">-- เลือกบริษัทประกัน --</option>';
+  allInsurers.forEach(function(ins) {
+    var name = ins.name || ins[0] || '';
+    var opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    if (name === prev) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // fallback: ถ้ามีค่าเดิมแต่ไม่อยู่ใน list ให้ใส่ไว้ก่อน
+  if (prev && !allInsurers.find(function(i){ return (i.name||i[0])===prev; })) {
+    var opt = document.createElement('option');
+    opt.value = prev; opt.textContent = prev; opt.selected = true;
+    sel.insertBefore(opt, sel.children[1]);
+  }
+}
+function onInsurerSelect() {
+  var sel = document.getElementById('pol-insurer');
+  var name = sel ? sel.value : '';
+  var ins = allInsurers.find(function(i){ return (i.name||i[0])===name; });
+  if (ins) {
+    var phone = ins.claimPhone || ins.phone || ins[1] || '';
+    var phoneEl = document.getElementById('pol-insurerPhone');
+    if (phoneEl && phone) phoneEl.value = phone;
+  }
+}
 function calcInstallmentAmount() {
-  const net   = Number(document.getElementById('pol-netPremium')?.value||0);
+  const discAmt = Number(document.getElementById('pol-premium')?.value||0);
+  const net   = discAmt > 0 ? discAmt : Number(document.getElementById('pol-netPremium')?.value||0);
   const count = Number(document.getElementById('pol-installmentCount')?.value||0);
   const mode  = document.querySelector('input[name="pol-inst-mode"]:checked')?.value || 'equal';
   const pctRow = document.getElementById('pol-first-pct-row');
@@ -1756,17 +1809,19 @@ async function confirmAddPolicy() {
   const custName = document.getElementById('pol-customerName').value.trim();
   const paymentType = document.getElementById('pol-paymentType').value;
   const netPremium = Number(document.getElementById('pol-netPremium').value||0);
+  const discountPremium = Number(document.getElementById('pol-premium').value||0);
+  const instBase = discountPremium > 0 ? discountPremium : netPremium;
   const installmentCount = Number(document.getElementById('pol-installmentCount')?.value||0);
   const installmentMode  = document.querySelector('input[name="pol-inst-mode"]:checked')?.value || 'equal';
   const firstPercent     = Number(document.getElementById('pol-firstPercent')?.value||20);
   const firstDueDate     = document.getElementById('pol-firstDueDate')?.value||'';
-  // คำนวณ installmentAmount จาก netPremium + mode
+  // คำนวณ installmentAmount จาก instBase (เบี้ยรวมส่วนลด) + mode
   let installmentAmount = 0;
   if (paymentType === 'ผ่อน' && installmentCount > 0) {
     if (installmentMode === 'equal') {
-      installmentAmount = Math.round(netPremium / installmentCount);
+      installmentAmount = Math.round(instBase / installmentCount);
     } else {
-      installmentAmount = Math.round(netPremium * firstPercent / 100); // งวดแรก (GAS จะคำนวณที่เหลือเอง)
+      installmentAmount = Math.round(instBase * firstPercent / 100);
     }
   }
   if (!pno) { showToast('กรุณากรอกเลขกรมธรรม์'); return; }
